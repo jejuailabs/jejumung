@@ -1,3 +1,4 @@
+import { createLounge } from './lounge.js?v=rooms-5';
 import { attachMedia } from './media-player.js';
 import * as THREE from './vendor/three.module.js';
 import { CLIPS } from './clips.js';
@@ -71,7 +72,7 @@ function render(now){
  const dt=Math.min(.05,(now-lastFrame)/1000);lastFrame=now;
  if(entered&&!resting){if(keys.has('KeyA')||keys.has('ArrowLeft'))laneTarget=Math.max(-1,laneTarget-dt*1.7);if(keys.has('KeyD')||keys.has('ArrowRight'))laneTarget=Math.min(1,laneTarget+dt*1.7);}
  lane=THREE.MathUtils.damp(lane,laneTarget,9,dt);
- if(renderer){
+ if(renderer&&!resting){
   const t=video.currentTime,path=samplePath(t),[oldCenter,oldHorizon]=sample(t),center=path?path.x:oldCenter,horizon=path ? .52 : oldHorizon;
   const hasVideoFrame=video.readyState>=HTMLMediaElement.HAVE_CURRENT_DATA;
   if(hasVideoFrame&&t!==lastTextureTime){videoTexture.needsUpdate=true;lastTextureTime=t;}
@@ -168,33 +169,23 @@ function setPose(pose,spotId){
  $('help').textContent=isCoast?(restScene.allowedPoses?.length===1?'사진 속 자리 표시를 골라 편하게 누워보세요. Esc로 다시 걷기.':'해먹에 앉거나 누워보세요. 다른 자리 표시를 눌러 옮길 수 있어요. Esc로 다시 걷기.'):pose==='lie'?'해먹에서 잠깐 눈을 감아도 좋아요. 다른 해먹의 표시를 눌러 옮길 수 있어요.':'앉기·눕기를 누르거나 사진 속 자리 표시를 골라보세요. Esc로 다시 걷기.';
  const speechPlace=pose==='stand'?restScene.standing:spot;$('speech').style.left=`${speechPlace.x/restWidth*100}%`;$('speech').style.bottom=`${Math.min(90,100-(speechPlace.y-speechPlace.scale*1.9)/restHeight*100)}%`;
 }
+const lounge=createLounge($('lounge'),{onReturn:()=>start(),onGender:value=>{
+ travelerGender=value;avatar?.setTraveler(value);try{localStorage.setItem('jejumong-traveler',value);}catch{}
+ document.querySelectorAll('[data-traveler]').forEach(b=>b.setAttribute('aria-pressed',String(b.dataset.traveler===value)));
+}});
+const requestedRoom=new URLSearchParams(location.search).get('room');
 function setRest(value){
  if(value===resting)return;
  if(value)savedWalkTime=video.currentTime;
- resting=value;pause();keys.clear();comparing=false;document.body.classList.remove('compare');document.body.classList.toggle('forest-mode',value);
+ resting=value;pause();keys.clear();comparing=false;document.body.classList.remove('compare','forest-mode');document.body.classList.toggle('lounge-mode',value);
+ $('stage').hidden=value;$('walkPanel').hidden=value;$('lounge').hidden=!value;$('arrival').hidden=true;
  $('compare').setAttribute('aria-pressed','false');$('compare').textContent='원본과 비교';
- $('forest').hidden=!value;$('source').hidden=value;$('forestSpots').hidden=!value;
- $('seaScenes').hidden=!(value&&isCoast);
- $('footMarker').hidden=value||!$('showFoot').checked;
- for(const id of['sit','lie','stand'])$(id).hidden=!value;
- for(const id of['play','hold','first','compare','sound','reloadMedia','timeline'])$(id).hidden=value;
- if(value)$('mediaNotice').hidden=true;
- if(!value&&!supportsCharacter)$('compare').hidden=true;
- $('rest').textContent=value?'← 다시 걷기':restEntryLabel;$('rest').classList.toggle('primary',value);
- $('modeLabel').textContent=value?restScene.title:'촬영된 경로를 따라 걷기';
- $('sceneLabel').textContent=value?restScene.title+' · 제공한 이미지':`${activeClip.file} · ${activeClip.title}`;
- $('renderStatus').textContent=value||supportsCharacter?'길 경로에 맞춘 여행자':'1인칭 시험 · 경로 불러오기 실패';
- $('truth').textContent=value?'풍경 속 자리에서 잠깐 쉬어가는 여행자':supportsCharacter?'촬영된 길을 따라 걷는 이미지 애니메이션':'캐릭터 경로를 불러오지 못해 1인칭으로 표시 중';
- if(value)setRestScene(restSceneId);
- else{
-  $('stage').style.removeProperty('aspect-ratio');
-  video.currentTime=savedWalkTime;$('hammockFront').hidden=true;$('wave').hidden=true;$('speech').hidden=true;
-  $('help').textContent=walkHelp;$('playingState').textContent='멈춤 · W 또는 걷기 시작';
- }
- $('arrival').hidden=true;
+ if(value){$('mediaNotice').hidden=true;lounge.enter({area:isCoast?'coast':'forest',traveler:travelerGender,requestedRoom:new URLSearchParams(location.search).get('room')});}
+ else{lounge.leave();video.currentTime=savedWalkTime;$('help').textContent=walkHelp;}
 }
+
 function toggle(){if(video.paused)start();else pause();}
-$('enter').addEventListener('click',start);$('play').addEventListener('click',toggle);
+$('enter').addEventListener('click',()=>{if(requestedRoom||new URLSearchParams(location.search).get('loungePreview')){entered=true;$('gate').hidden=true;setRest(true);}else start();});$('play').addEventListener('click',toggle);
 $('retryMedia').addEventListener('click',reloadMedia);$('reloadMedia').addEventListener('click',reloadMedia);
 document.querySelectorAll('[data-traveler]').forEach(button=>{button.setAttribute('aria-pressed',String(button.dataset.traveler===travelerGender));button.addEventListener('click',()=>{travelerGender=button.dataset.traveler;avatar?.setTraveler(travelerGender);try{localStorage.setItem('jejumong-traveler',travelerGender);}catch{}document.querySelectorAll('[data-traveler]').forEach(b=>b.setAttribute('aria-pressed',String(b.dataset.traveler===travelerGender)));});});
 $('rest').addEventListener('click',()=>{if(!entered)return;if(resting)start();else setRest(true);});
@@ -226,7 +217,9 @@ for(const event of['loadeddata','canplay','playing','seeked'])video.addEventList
 for(const event of['waiting','stalled','seeking'])video.addEventListener(event,queueMediaNotice);
 video.addEventListener('error',()=>{clearTimeout(mediaWaitTimer);mediaFailed=true;showMediaNotice('영상을 불러오지 못했습니다. 인터넷 연결을 확인한 뒤 다시 불러오세요.');});
 try{initialize3D();}catch(e){renderer=null;$('renderStatus').textContent='3D 사용 불가';showError('WebGL 3D를 시작할 수 없습니다. 영상 조작만 가능합니다. 오류: '+e.message);$('first').disabled=true;}
-for(const id of['enter','play','hold','rest'])$(id).disabled=false;$('enter').textContent='영상 속 길로 들어가기 →';requestAnimationFrame(render);
+for(const id of['enter','play','hold','rest'])$(id).disabled=false;$('enter').textContent=requestedRoom?'함께 쉬는 구역으로 들어가기 →':'영상 속 길로 들어가기 →';
+if(requestedRoom){$('walkTitle').textContent='제주에서 잠깐, 함께 쉬어요.';$('gate').querySelectorAll('p')[1].textContent='입장하면 링크의 쉼터 구역으로 연결됩니다.';}
+requestAnimationFrame(render);
 if(!supportsCharacter){$('first').disabled=true;$('first').textContent='캐릭터 경로 없음';$('compare').hidden=true;}
 else $('truth').textContent='영상별 길 경로 + 프레임 움직임 보정 · 가림·바닥 정밀도 시험 중';
 $('pathDebug').hidden=new URLSearchParams(location.search).get('debug')!=='1';
