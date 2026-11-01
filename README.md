@@ -13,6 +13,10 @@
 
 `vercel.json`에 위 설정이 포함되어 있습니다. `npm run check`로 영상 HLS 참조·길이, 96개 캐릭터 프레임, 파일 경계와 개인 키 포함 여부를 검사합니다. `npm start`는 로컬 127.0.0.1:4176에서 체험을 엽니다.
 
+## GitHub 자동 배포
+
+`jejuailabs/jejumung` 저장소를 Vercel `jejuai/jejumung`에 연결합니다. `main`에 푸시하면 Vercel이 `npm run build`를 실행하고 성공한 결과를 https://jejumung.vercel.app 에 공개합니다. 수정·커밋·푸시는 이 README가 있는 폴더에서 수행합니다. 기존 Hobby 무료 범위를 유지하며 유료 플랜·애드온으로 자동 전환하지 않습니다.
+
 ## Firebase
 
 `dist/firebase-web.js`는 제공한 `kakaobot-6fea2` 프로젝트의 공개 웹 설정으로 앱과 무료 Google Analytics만 초기화합니다. Firebase SDK는 Google 공식 CDN의 13.1.0으로 고정했습니다. 광고 차단이나 네트워크 오류로 통계를 못 불러와도 산책 엔진은 독립적으로 동작합니다.
