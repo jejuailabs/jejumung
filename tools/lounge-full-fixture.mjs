@@ -1,5 +1,6 @@
 // Disposable room 996 only, for verifying full-room routing. Never use a normal guest room.
 import{LOUNGE_FIREBASE as c}from'../dist/lounge-config.js';
+if(!process.stdin.isTTY)throw Error('Run this fixture in an interactive TTY so cleanup can finish.');
 const signup=await fetch('https://identitytoolkit.googleapis.com/v1/accounts:signUp?key='+c.apiKey,{method:'POST',headers:{'content-type':'application/json'},body:'{"returnSecureToken":true}'});
 const user=await signup.json();if(!signup.ok)throw Error(user.error?.message);
 const endpoint=c.databaseURL+'/jejumungV5/rooms/coast_sunbed_996/seats/';

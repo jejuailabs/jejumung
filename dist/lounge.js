@@ -2,7 +2,7 @@ import {parseRoom,roomId,sceneFor,KINDS,SEATS} from './lounge-scenes.js';
 
 export function createLounge(host,{onReturn,onGender}){
  const preview=new URLSearchParams(location.search).get('loungePreview')==='15';
- let room,gender='male',name='',client,state={seats:{},messages:[],connected:false},busy=false,active=false,clientPromise;
+ let room,gender='male',name='',client,state={seats:{},messages:[],connected:false},busy=false,active=false,clientPromise,visit=0;
  try{name=localStorage.getItem('jejumong-name')||'';}catch{}
  if(!name)name='여행자'+String(Math.floor(Math.random()*900)+100);
  host.innerHTML=`<div class="lounge-heading"><div><p class="lounge-kicker">잠깐 머무는 제주</p><h1 id="loungeTitle">함께, 아무것도 하지 않아도 좋은 곳.</h1></div><button id="loungeReturn">← 산책 이어가기</button></div>
@@ -58,18 +58,18 @@ export function createLounge(host,{onReturn,onGender}){
  }
  function updateURL(){const url=new URL(location.href);url.searchParams.set('room',room.id);history.replaceState(null,'',url);}
  async function move(id,slot,find=false){
-  if(busy||!active)return;busy=true;say('빈자리를 확인하고 있어요…');renderState();
+  if(busy||!active)return;const attempt=visit;busy=true;say('빈자리를 확인하고 있어요…');renderState();
   const wanted=parseRoom(id);let next=wanted;
   try{
-   if(!preview){const api=await backend();
+   if(!preview){const api=await backend();if(!active||attempt!==visit)return;
     for(let tries=0;;tries++){
      try{await api.join(next.id,profile(),slot);break;}
      catch(e){if(e.code==='room-full'&&!slot&&tries<11&&(find||tries===0)){next=parseRoom(roomId(next.area,next.kind,next.index===999?1:next.index+1));find=true;continue;}throw e;}
     }
    }
-   if(!active)return;room=next;drawScene();updateURL();say(next.id!==wanted.id?'자리가 가득 차서 옆의 빈 구역으로 이동했어요.':'자리를 골라 편하게 쉬세요. 옆 구역에도 다른 풍경이 있어요.');
-  }catch(e){say(e.code==='room-full'?'자리가 찼어요. 옆 구역이나 빈 구역 찾기를 눌러주세요.':'연결하지 못했어요. 인터넷을 확인한 뒤 빈 구역 찾기로 다시 연결해 주세요.');console.warn('Lounge:',e.code||e.message);}
-  finally{busy=false;if(active)renderState();}
+   if(!active||attempt!==visit)return;room=next;drawScene();updateURL();say(next.id!==wanted.id?'자리가 가득 차서 옆의 빈 구역으로 이동했어요.':'자리를 골라 편하게 쉬세요. 옆 구역에도 다른 풍경이 있어요.');
+  }catch(e){if(!active||attempt!==visit||e.code==='join-cancelled')return;say(e.code==='room-full'?'자리가 찼어요. 옆 구역이나 빈 구역 찾기를 눌러주세요.':'연결하지 못했어요. 인터넷을 확인한 뒤 빈 구역 찾기로 다시 연결해 주세요.');console.warn('Lounge:',e.code||e.message);}
+  finally{if(attempt===visit){busy=false;if(active)renderState();}}
  }
  $('loungePrev').onclick=()=>move(roomId(room.area,room.kind,room.index-1));$('loungeNext').onclick=()=>move(roomId(room.area,room.kind,room.index+1));
  $('loungeFind').onclick=()=>move(roomId(room.area,room.kind,room.index),undefined,true);
@@ -80,7 +80,7 @@ export function createLounge(host,{onReturn,onGender}){
  $('loungeChatForm').onsubmit=async e=>{e.preventDefault();const input=$('loungeChatText'),text=input.value.trim();if(preview||busy||!client||!text)return;if(Date.now()-lastSent<1600){say('천천히 나눠요. 잠시 후 다시 보내주세요.');return;}lastSent=Date.now();$('loungeSend').disabled=true;try{await client.send(text);input.value='';say('');}catch{say('메시지를 보내지 못했어요. 잠시 후 다시 시도해 주세요.');}finally{renderState();}};
  $('loungeShare').onclick=async()=>{try{await navigator.clipboard.writeText(location.href);say('이 구역으로 오는 링크를 복사했어요.');}catch{say('주소창의 링크를 복사하면 같은 구역에서 만날 수 있어요.');}};
  return{
-  enter({area,traveler,requestedRoom}){active=true;gender=traveler;room=parseRoom(requestedRoom,roomId(area,area==='forest'?'hammock':'sunbed',1));state={seats:{},messages:[],connected:false};drawScene();applyGender();if(preview){updateURL();say('가상 인원으로 15석 배치를 확인하는 화면입니다.');}else move(room.id);},
-  async leave(){active=false;const url=new URL(location.href);url.searchParams.delete('room');url.searchParams.delete('loungePreview');history.replaceState(null,'',url);if(client)await client.leave().catch(()=>{});}
+  enter({area,traveler,requestedRoom}){visit++;busy=false;active=true;gender=traveler;room=parseRoom(requestedRoom,roomId(area,area==='forest'?'hammock':'sunbed',1));state={seats:{},messages:[],connected:false};drawScene();applyGender();if(preview){updateURL();say('가상 인원으로 15석 배치를 확인하는 화면입니다.');}else move(room.id);},
+  async leave(){visit++;busy=false;active=false;const url=new URL(location.href);url.searchParams.delete('room');url.searchParams.delete('loungePreview');history.replaceState(null,'',url);if(client)await client.leave().catch(()=>{});}
  };
 }

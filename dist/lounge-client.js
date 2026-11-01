@@ -7,28 +7,33 @@ import {SEATS} from './lounge-scenes.js';
 export function createLoungeClient(changed){
  const app=getApps().find(a=>a.name==='lounge')||initializeApp(LOUNGE_FIREBASE,'lounge');
  const auth=initializeAuth(app,{persistence:inMemoryPersistence}),db=getDatabase(app);
- let uid,login,current=null,subscriptions=[],seats={},messages={},connected=false,reconnecting=false,closed=true;
+ const handlers=new Map();
+ let uid,login,current=null,subscriptions=[],seats={},messages={},connected=false,reconnecting=false,closed=true,generation=0;
+ const check=attempt=>{if(closed||attempt!==generation)throw Object.assign(Error('Join cancelled'),{code:'join-cancelled'});};
  const path=id=>`jejumungV5/rooms/${id}`;
  const emit=()=>changed({uid,room:current?.room,seats,messages:Object.entries(messages).filter(([owner])=>Object.values(seats).some(s=>s.uid===owner)).flatMap(([owner,v])=>Object.entries(v.slots||{}).map(([key,m])=>({...m,id:owner+key,uid:owner}))).sort((a,b)=>a.at-b.at).slice(-50),connected});
  const init=async()=>{goOnline(db);if(!login)login=signInAnonymously(auth).then(r=>uid=r.user.uid).catch(e=>{login=null;throw e;});await login;};
  async function dispose(item){
   if(!item)return;
   // Keep disconnect cleanup armed until server-side deletion has succeeded.
-  await remove(item.seat);await item.disconnect.cancel();
-  if(item.room!==current?.room){await remove(ref(db,path(item.room)+'/messages/'+uid));await item.chatDisconnect.cancel();}
+  await runTransaction(item.seat,value=>value?.lease===item.lease?null:undefined,{applyLocally:false});
+  if(handlers.get(item.room+'/'+item.key)===item.lease)await item.disconnect.cancel();
+  if(item.room!==current?.room&&handlers.get(item.room+'/chat')===item.lease){await remove(ref(db,path(item.room)+'/messages/'+uid));await item.chatDisconnect.cancel();}
  }
- async function claim(room,profile,preferred){
+ async function claim(room,profile,preferred,attempt=generation){
   const snapshot=(await get(ref(db,path(room)+'/seats'))).val()||{};
+  check(attempt);
   const keys=preferred?[preferred]:Array.from({length:SEATS},(_,i)=>'s'+String(i).padStart(2,'0'));
   for(const key of keys){
    if(snapshot[key]&&snapshot[key].uid!==uid)continue;
    const seat=ref(db,path(room)+'/seats/'+key),disconnect=onDisconnect(seat),lease=crypto.randomUUID();
    try{
-    await disconnect.remove();
-    const result=await runTransaction(seat,value=>!value||value.uid===uid?{...profile,uid,at:serverTimestamp(),lease}:undefined,{applyLocally:false});
-    if(result.committed){const chatDisconnect=onDisconnect(ref(db,path(room)+'/messages/'+uid));await chatDisconnect.remove();return{room,key,seat,disconnect,chatDisconnect,lease,profile};}
-    await disconnect.cancel();
-   }catch(e){await disconnect.cancel().catch(()=>{});throw e;}
+    handlers.set(room+'/'+key,lease);
+    await disconnect.remove();check(attempt);
+    const result=await runTransaction(seat,value=>!closed&&attempt===generation&&(!value||value.uid===uid)?{...profile,uid,at:serverTimestamp(),lease}:undefined,{applyLocally:false});
+    if(result.committed){const chatDisconnect=onDisconnect(ref(db,path(room)+'/messages/'+uid));handlers.set(room+'/chat',lease);await chatDisconnect.remove();return{room,key,seat,disconnect,chatDisconnect,lease,profile};}
+    if(handlers.get(room+'/'+key)===lease)await disconnect.cancel();
+   }catch(e){if(handlers.get(room+'/'+key)===lease)await disconnect.cancel().catch(()=>{});throw e;}
   }
   throw Object.assign(Error('이 구역의 15자리가 모두 찼어요.'),{code:'room-full'});
  }
@@ -51,9 +56,9 @@ export function createLoungeClient(changed){
  }
  return{
   async join(room,profile,preferred){
-   closed=false;await init();const previous=current;
-   const next=await claim(room,profile,preferred);
-   if(closed){await dispose(next);return;}
+   const attempt=++generation;closed=false;await init();check(attempt);const previous=current;
+   const next=await claim(room,profile,preferred,attempt);
+   if(closed||attempt!==generation){await dispose(next);check(attempt);}
    current=next;
    if(previous&&(previous.room!==next.room||previous.key!==next.key))await dispose(previous);
    seats={};messages={};watch();emit();return next;
@@ -65,9 +70,9 @@ export function createLoungeClient(changed){
    await runTransaction(own,value=>{const seq=(value?.seq||0)+1;return{seq,lastAt:serverTimestamp(),slots:{...(value?.slots||{}),['m'+((seq-1)%5)]:{text:message,name:current.profile.name,at:serverTimestamp()}}};},{applyLocally:false});
   },
   async leave(){
-   closed=true;subscriptions.forEach(fn=>fn());subscriptions=[];
+   const attempt=++generation;closed=true;subscriptions.forEach(fn=>fn());subscriptions=[];
    const old=current;current=null;seats={};messages={};connected=false;emit();
-   try{await dispose(old);}finally{goOffline(db);}
+   try{await dispose(old);}finally{if(closed&&attempt===generation)goOffline(db);}
   }
  };
 }
