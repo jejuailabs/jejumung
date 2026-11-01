@@ -2,11 +2,13 @@ import { attachMedia } from './media-player.js';
 import * as THREE from './vendor/three.module.js';
 import { CLIPS } from './clips.js';
 import { REST_SCENES, COAST_REST_IDS } from './rest-scenes.js';
-import { createTravelerAvatar } from './traveler-avatar.js?v=3';
+import { createTravelerAvatar } from './traveler-avatar.js?v=slow-walk-4';
 
 const $ = id => document.getElementById(id), video = $('source');
 const activeClip=CLIPS.find(clip=>clip.id===new URLSearchParams(location.search).get('clip'))||CLIPS[0];
 const isCoast=activeClip.id==='IMG_0575';
+const WALK_RATE=.72;
+video.defaultPlaybackRate=WALK_RATE;video.playbackRate=WALK_RATE;video.preservesPitch=true;
 let travelerGender='male';try{travelerGender=localStorage.getItem('jejumong-traveler')==='female'?'female':'male';}catch{}
 const restEntryLabel=isCoast?'바다로 쉬러 가기':'숲으로 쉬러 가기';
 $('rest').textContent=$('stay').textContent=restEntryLabel;
@@ -29,7 +31,7 @@ let restWidth=restScene.width,restHeight=restScene.height,spots=restScene.spots;
 let restPose='stand',restSpot=restScene.entrySpot,savedWalkTime=0;
 let restImageReady=true;
 let lane=0, laneTarget=0, lastFrame=performance.now();
-let restTransition=null;
+let restTransition=null,walkStartedAt=-Infinity;
 let mediaFailed=false,mediaWaiting=false,mediaWaitTimer,recoveryPosition=null;
 function showMediaNotice(message){$('mediaMessage').textContent=message;$('mediaNotice').hidden=resting;}
 function clearMediaNotice(){clearTimeout(mediaWaitTimer);mediaFailed=false;mediaWaiting=false;$('mediaNotice').hidden=true;}
@@ -83,7 +85,8 @@ function render(now){
    if(!$('footMarker').hidden){$('footMarker').style.left=`${(center+lane*(path?path.laneWidth:.065))*100}%`;$('footMarker').style.top=`${(path?path.y:.865)*100}%`;}
   }
   const moving=!video.paused&&!video.ended&&!resting;
-  avatar.update({dt,time:now/1000,walkTime:t,walking:moving,pose:resting?restPose:'walk',profile:restSceneId,view:resting?resolvedSpot().sprite?.view:undefined,wave:now<waveUntil});
+  if(moving){const rate=THREE.MathUtils.lerp(WALK_RATE*.62,WALK_RATE,THREE.MathUtils.smoothstep((now-walkStartedAt)/550,0,1));if(video.playbackRate!==rate)video.playbackRate=rate;}
+  avatar.update({dt,time:now/1000,walkTime:t/WALK_RATE,walking:moving,pose:resting?restPose:'walk',profile:restSceneId,view:resting?resolvedSpot().sprite?.view:undefined,wave:now<waveUntil});
   if(resting){
    const spot=resolvedSpot();
    if(restPose==='stand'){
@@ -115,7 +118,7 @@ function render(now){
   $('stage').dataset.poseReady=String(resting&&avatar.root.userData.poseSettled&&!restTransition);
   $('stage').dataset.travelerFrame=String(avatar.root.userData.frame);
   $('stage').dataset.travelerClip=avatar.root.userData.clip;
-  $('renderStatus').textContent=!avatar.ready?'여행자 이미지 준비 중…':!resting&&!inFrame?'바다를 바라보는 구간 · 여행자는 시야 밖':`${travelerGender==='female'?'여성':'남성'} 여행자 · ${resting?'잠깐 쉬어가기':moving?'걷기':'멈춰서 멍때리기'}`;
+  $('renderStatus').textContent=!avatar.ready?'여행자 이미지 준비 중…':!resting&&!inFrame?'바다를 바라보는 구간 · 여행자는 시야 밖':`${travelerGender==='female'?'여성':'남성'} 여행자 · ${resting?'잠깐 쉬어가기':moving?'여유롭게 걷기':'멈춰서 멍때리기'}`;
  }
  const duration=Number.isFinite(video.duration)?video.duration:activeClip.duration;
  const displayTime=recoveryPosition??video.currentTime;
@@ -124,7 +127,7 @@ function render(now){
  $('play').textContent=video.paused?'걷기 시작':'걷기 멈춤';requestAnimationFrame(render);
 }
 function showError(text){$('error').hidden=false;$('error').textContent=text;}
-async function start(){if(!entered){entered=true;$('gate').hidden=true;}if(resting){const wasHeld=held;setRest(false);held=wasHeld;}$('arrival').hidden=true;if(video.ended||video.currentTime>=video.duration-.03)video.currentTime=0;try{await video.play();}catch(e){if(e.name!=='AbortError')showError('영상 재생에 실패했어요. 원본 비교를 눌러 재생 상태를 확인해주세요.');}}
+async function start(){if(!entered){entered=true;$('gate').hidden=true;}if(resting){const wasHeld=held;setRest(false);held=wasHeld;}$('arrival').hidden=true;if(video.ended||video.currentTime>=video.duration-.03)video.currentTime=0;if(video.paused){walkStartedAt=performance.now();video.playbackRate=WALK_RATE*.62;}try{await video.play();}catch(e){if(e.name!=='AbortError')showError('영상 재생에 실패했어요. 원본 비교를 눌러 재생 상태를 확인해주세요.');}}
 function pause(){held=false;video.pause();}
 function resolvedSpot(){const spot=spots[restSpot];return{...spot,...spot.poses?.[restPose]};}
 function setRestScene(sceneId){
@@ -214,6 +217,7 @@ document.addEventListener('keydown',e=>{if(e.target.matches('input,textarea,[con
 document.addEventListener('keyup',e=>{keys.delete(e.code);if(['KeyW','ArrowUp'].includes(e.code))pause();});
 window.addEventListener('blur',()=>{keys.clear();pause();});document.addEventListener('visibilitychange',()=>{if(document.hidden){keys.clear();pause();}});
 video.addEventListener('ended',()=>{$('arrival').hidden=false;});
+video.addEventListener('playing',()=>{walkStartedAt=performance.now();});
 video.addEventListener('loadedmetadata',()=>{
  $('timeline').max=video.duration;
  if(recoveryPosition!==null){const target=recoveryPosition;recoveryPosition=null;video.currentTime=Math.min(target,video.duration);if(entered&&!resting)start();}

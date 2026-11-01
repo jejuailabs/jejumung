@@ -1,13 +1,14 @@
-import {TRAVELERS} from './traveler-assets.js?v=3';
+import {TRAVELERS} from './traveler-assets.js?v=slow-walk-4';
 
 // Each frame is a generated drawing, not a deformation of one still image.
 export function createTravelerAvatar(T,{gender='male',onError=()=>{}}={}){
  const root=new T.Group();root.name='traveler-sprite';
  const material=new T.SpriteMaterial({transparent:true,alphaTest:.15,depthWrite:false,toneMapped:false});
  const sprite=new T.Sprite(material);root.add(sprite);
+ const idleMaterial=material.clone(),idleSprite=new T.Sprite(idleMaterial);root.add(idleSprite);idleSprite.visible=false;
  const loader=new T.TextureLoader(),textures=new Map();
  let selected=TRAVELERS[gender]?gender:'male',frame=null,group=null,loaded=false,currentPose='walk';
- let greeting=false;
+ let greeting=false,walkBlend=0;
  function textureFor(path){
   if(textures.has(path))return textures.get(path);
   const entry={ready:false,texture:null};textures.set(path,entry);
@@ -24,14 +25,24 @@ export function createTravelerAvatar(T,{gender='male',onError=()=>{}}={}){
   root.userData.ready=loaded;root.userData.poseSettled=loaded;root.userData.traveler=selected;
  }
  function centerAt(point,mirror=false){const[, ,w,h]=frame.rect;sprite.center.set(mirror?1-point[0]/w:point[0]/w,1-point[1]/h);}
- function update({time,walkTime=0,walking=false,pose='walk',profile='forest',view,wave=false}){
+ function update({dt=1/60,time,walkTime=0,walking=false,pose='walk',profile='forest',view,wave=false}){
   currentPose=pose;greeting=wave;
-  const type=pose==='lie'?(view||({coastLounge:'sunbed',coastPaddles:'overhead'}[profile])||'hammock'):pose==='sit'?'sit':walking?'walk':'idle';
+  walkBlend=pose==='walk'?T.MathUtils.damp(walkBlend,walking?1:0,14,dt):0;
+  const type=pose==='lie'?(view||({coastLounge:'sunbed',coastPaddles:'overhead'}[profile])||'hammock'):pose==='sit'?'sit':pose==='walk'&&(walking||walkBlend>.015)?'walk':'idle';
   group=TRAVELERS[selected].groups[type];
   const clock=type==='walk'?walkTime:time,idx=Math.floor(clock*group.fps)%group.frames.length;
   frame=group.frames[idx];root.userData.frame=idx;root.userData.clip=type;
   applyFrame();centerAt(frame.anchor);
   const[, ,w,h]=frame.rect;sprite.scale.set(w*group.pixelScale,h*group.pixelScale,1);material.rotation=0;
+  // Briefly blend only walk <-> idle, never ghost successive walking poses.
+  material.opacity=type==='walk'?walkBlend:1;idleSprite.visible=false;
+  if(pose==='walk'&&type==='walk'&&walkBlend<.985){
+   const idle=TRAVELERS[selected].groups.idle,f=idle.frames[Math.floor(time*idle.fps)%idle.frames.length];
+   const entry=textureFor(idle.image),[x,y,iw,ih]=f.rect;
+   entry.texture.repeat.set(iw/idle.size[0],ih/idle.size[1]);entry.texture.offset.set(x/idle.size[0],1-(y+ih)/idle.size[1]);
+   idleMaterial.map=entry.texture;idleMaterial.needsUpdate=!idleMaterial.userData.hasMap;idleMaterial.userData.hasMap=true;idleMaterial.opacity=1-walkBlend;
+   idleSprite.center.set(f.anchor[0]/iw,1-f.anchor[1]/ih);idleSprite.scale.set(iw*idle.pixelScale,ih*idle.pixelScale,1);idleSprite.visible=entry.ready;
+  }
  }
  function alignRest({pose,spot,width,height}){
   if(!frame)return;
