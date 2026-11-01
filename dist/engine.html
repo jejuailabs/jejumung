@@ -1,0 +1,24 @@
+<!doctype html>
+<html lang="ko"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>제주멍 · 잠깐, 제주에 다녀올까요</title><link rel="stylesheet" href="engine.css?v=travelers-3"><script src="vendor/hls.min.js"></script><script type="module" src="engine.js?v=travelers-3"></script><script type="module" src="/firebase-web.js"></script></head>
+<body><header><a href="/" class="brand">◒ 제주멍</a><a href="/">다른 길 고르기 ↗</a><span class="engine">JEJU MONG</span></header>
+<main><section class="stage" id="stage" aria-label="제주 걷기 영상과 여행자 체험 화면">
+  <video id="source" playsinline muted preload="metadata" aria-label="제공한 원본 걷기 영상의 웹용 사본"></video>
+  <img id="forest" src="/lab/media/forest-rest.png" alt="곶자왈 숲속의 벤치와 세 개의 해먹" hidden>
+  <div id="render"></div><div class="scene-top"><span id="sceneLabel">IMG_2207.MOV · 실제 걷기 영상</span><span id="renderStatus">3D 준비 중</span></div>
+  <span id="footMarker" hidden aria-hidden="true"></span>
+  <div id="mediaNotice" class="media-notice" role="status" hidden><p id="mediaMessage"></p><button id="retryMedia" type="button">영상 다시 불러오기</button></div>
+  <img id="hammockFront" src="/lab/media/forest-rest.png" alt="" aria-hidden="true" hidden>
+  <div id="forestSpots" hidden aria-label="숲 쉼터 자리 선택">
+  </div>
+  <div id="gate" class="gate"><p>잠깐, 제주에 다녀올까요</p><h1 id="walkTitle">이 길을 같이 걸어요.</h1><p>입장하면 선택한 영상이 바로 재생됩니다.</p><button id="enter" disabled>3D 준비 중…</button></div>
+  <div id="arrival" class="arrival" hidden><p>이 길의 끝에 도착했어요.</p><button id="again">다시 걷기</button><button id="stay">숲으로 쉬러 가기</button></div>
+  <div id="speech" class="speech" role="status" hidden></div>
+  <span id="playingState" class="playing-state">입장 전 · 영상 정지</span>
+</section>
+<section class="panel"><nav id="travelerChoices" aria-label="여행자 선택"><span>함께 걸을 여행자</span><button data-traveler="male" aria-pressed="true">남성 여행자</button><button data-traveler="female" aria-pressed="false">여성 여행자</button></nav><div class="timeline"><span id="modeLabel">촬영된 경로를 따라 걷기</span><span id="readout">0.00 / 11.56초</span></div><input id="timeline" aria-label="영상 속 위치" type="range" min="0" max="11.56" step="0.01" value="0">
+<nav id="seaScenes" hidden aria-label="바다 쉼터 선택"><button type="button" data-rest-scene="coastLounge" aria-pressed="true">선베드</button><button type="button" data-rest-scene="coastHammocks" aria-pressed="false">해먹</button><button type="button" data-rest-scene="coastPaddles" aria-pressed="false">패들보드</button></nav>
+<div class="actions"><button id="play" class="primary" disabled>걷기 시작</button><button id="hold" disabled>누르는 동안 걷기</button><button id="rest" disabled>숲으로 쉬러 가기</button><button id="sit" aria-pressed="false" hidden>앉기</button><button id="lie" aria-pressed="false" hidden>눕기</button><button id="stand" aria-pressed="true" hidden>일어나기</button><button id="wave" hidden>손 흔들기</button><button id="first" aria-pressed="false">1인칭 보기</button><button id="compare" aria-pressed="false">원본과 비교</button><button id="sound" aria-pressed="false">원본 소리 끔</button><button id="reloadMedia" type="button">화면 다시 불러오기</button></div>
+<p id="help">W / ↑ 전진 · A D / ← → 길 안에서 좌우 이동 · Space 걷기/멈춤</p><p id="truth" class="truth">영상 경로 기반 합성 · 바닥 원근은 수동 맞춤 · 자유 시점/공간 복원 아님</p><p id="error" role="alert" hidden></p></section>
+<details id="pathDebug" hidden><summary>경로 검사</summary><label for="jumpTime">영상 시점(초)</label><input id="jumpTime" type="number" min="0" step="0.1" value="0"><button id="jump">이 시점으로 이동</button><label><input id="showFoot" type="checkbox">발 위치 기준점 표시</label></details>
+<section class="notes"><p><strong>잠깐 쉬어가기</strong> 바닷길에서는 선베드·해먹·패들보드, 숲길에서는 해먹과 벤치에서 쉬어보세요. 다시 걷기를 누르면 멈췄던 위치로 돌아갑니다.</p><p>체험판 · 각자 산책하는 공간입니다. 다른 접속자와의 만남·채팅은 아직 지원하지 않습니다.</p></section></main>
+<footer>제주멍 · 잠깐 머무는 제주 · <a href="vendor/THREE-LICENSE.txt">Three.js</a> · <a href="vendor/HLS-LICENSE.txt">hls.js</a></footer></body></html>

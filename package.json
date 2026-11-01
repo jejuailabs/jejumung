@@ -1,0 +1,11 @@
+{
+  "name": "jejumung",
+  "version": "3.0.0",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "check": "node --check dist/engine.js && node --check dist/traveler-avatar.js && node --check dist/firebase-web.js && node verify-public.mjs && node verify-deploy.mjs",
+    "build": "npm run check",
+    "start": "node preview.mjs"
+  }
+}
