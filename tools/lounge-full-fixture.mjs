@@ -3,11 +3,11 @@ import{LOUNGE_FIREBASE as c}from'../dist/lounge-config.js';
 if(!process.stdin.isTTY)throw Error('Run this fixture in an interactive TTY so cleanup can finish.');
 const signup=await fetch('https://identitytoolkit.googleapis.com/v1/accounts:signUp?key='+c.apiKey,{method:'POST',headers:{'content-type':'application/json'},body:'{"returnSecureToken":true}'});
 const user=await signup.json();if(!signup.ok)throw Error(user.error?.message);
-const endpoint=c.databaseURL+'/jejumungV5/rooms/coast_sunbed_996/seats/';
-const keys=Array.from({length:15},(_,i)=>'s'+String(i).padStart(2,'0'));
+const endpoint=c.databaseURL+'/jejumungV6/rooms/coast_hammock_996/seats/';
+const keys=Array.from({length:4},(_,i)=>'s'+String(i).padStart(2,'0'));
 try{
- for(const key of keys){const r=await fetch(endpoint+key+'.json?auth='+user.idToken,{method:'PUT',headers:{'content-type':'application/json'},body:JSON.stringify({uid:user.localId,name:'배치 검증',gender:'male',at:{'.sv':'timestamp'},lease:'disposable-qa'})});if(!r.ok)throw Error('Fixture seat failed: '+r.status);}
- console.log('QA room 996 has 15 disposable seats. Press Enter to clean up.');
+ for(const key of keys){const r=await fetch(endpoint+key+'.json?auth='+user.idToken,{method:'PUT',headers:{'content-type':'application/json'},body:JSON.stringify({uid:user.localId,name:'배치 검증',character:'stone',at:{'.sv':'timestamp'},lease:'disposable-qa'})});if(!r.ok)throw Error('Fixture seat failed: '+r.status);}
+ console.log('QA coastal hammock room 996 has four disposable seats. Press Enter to clean up.');
  await new Promise(resolve=>process.stdin.once('data',resolve));
 }finally{
  for(const key of keys)await fetch(endpoint+key+'.json?auth='+user.idToken,{method:'DELETE'});

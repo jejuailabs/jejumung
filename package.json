@@ -1,10 +1,10 @@
 {
   "name": "jejumung",
-  "version": "3.0.0",
+  "version": "4.0.0",
   "private": true,
   "type": "module",
   "scripts": {
-    "check": "node --check dist/lounge.js && node --check dist/lounge-client.js && node --check dist/lounge-scenes.js && node --check dist/engine.js && node --check dist/traveler-avatar.js && node --check dist/firebase-web.js && node tools/check-lounge.mjs && node verify-public.mjs && node verify-deploy.mjs",
+    "check": "node --check dist/characters.js && node --check dist/companion.js && node --check dist/lounge-renderer.js && node --check dist/lounge.js && node --check dist/lounge-client.js && node --check dist/lounge-scenes.js && node --check dist/engine.js && node --check dist/traveler-avatar.js && node --check dist/firebase-web.js && node tools/check-lounge.mjs && node verify-public.mjs && node verify-deploy.mjs",
     "build": "npm run check",
     "start": "node preview.mjs"
   }

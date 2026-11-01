@@ -68,6 +68,73 @@
           }
         }
       }
+    },
+    "jejumungV6": {
+      "rooms": {
+        "$room": {
+          ".read": "auth != null",
+          ".validate": "$room.matches(/^(coast_(sunbed|hammock|bench|paddle)|forest_(hammock|bench))_[0-9]{3}$/)",
+          "seats": {
+            "$slot": {
+              ".write": "auth != null && (!data.exists() || data.child('uid').val() == auth.uid) && (!newData.exists() || newData.child('uid').val() == auth.uid)",
+              ".validate": "$slot.matches(/^s0[0-4]$/) && (!$room.matches(/^coast_hammock_/) || $slot != 's04') && newData.hasChildren(['uid','name','character','at','lease'])",
+              "uid": {
+                ".validate": "newData.val() == auth.uid"
+              },
+              "name": {
+                ".validate": "newData.isString() && newData.val().length > 0 && newData.val().length <= 16"
+              },
+              "character": {
+                ".validate": "newData.val() == 'stone' || newData.val() == 'citrus' || newData.val() == 'cloud' || newData.val() == 'sprout'"
+              },
+              "at": {
+                ".validate": "newData.isNumber() && newData.val() > 0 && newData.val() <= now"
+              },
+              "lease": {
+                ".validate": "newData.isString() && newData.val().length > 0 && newData.val().length <= 64"
+              },
+              "$other": {
+                ".validate": false
+              }
+            }
+          },
+          "messages": {
+            "$uid": {
+              ".write": "auth != null && ((auth.uid == $uid && (!newData.exists() || (root.child('jejumungV6/rooms').child($room).child('seats/s00/uid').val() == auth.uid || root.child('jejumungV6/rooms').child($room).child('seats/s01/uid').val() == auth.uid || root.child('jejumungV6/rooms').child($room).child('seats/s02/uid').val() == auth.uid || root.child('jejumungV6/rooms').child($room).child('seats/s03/uid').val() == auth.uid || root.child('jejumungV6/rooms').child($room).child('seats/s04/uid').val() == auth.uid))) || (!newData.exists() && data.child('lastAt').val() < now - 10000 && !(root.child('jejumungV6/rooms').child($room).child('seats/s00/uid').val() == $uid || root.child('jejumungV6/rooms').child($room).child('seats/s01/uid').val() == $uid || root.child('jejumungV6/rooms').child($room).child('seats/s02/uid').val() == $uid || root.child('jejumungV6/rooms').child($room).child('seats/s03/uid').val() == $uid || root.child('jejumungV6/rooms').child($room).child('seats/s04/uid').val() == $uid)))",
+              ".validate": "newData.hasChildren(['seq','lastAt','slots']) && newData.child('lastAt').val() == now && (!data.exists() || now >= data.child('lastAt').val() + 1500) && newData.child('seq').isNumber() && newData.child('seq').val() == (data.exists() ? data.child('seq').val() + 1 : 1)",
+              "seq": {
+                ".validate": "newData.isNumber()"
+              },
+              "lastAt": {
+                ".validate": "newData.isNumber()"
+              },
+              "slots": {
+                "$message": {
+                  ".validate": "$message.matches(/^m[0-4]$/) && newData.hasChildren(['text','name','at'])",
+                  "text": {
+                    ".validate": "newData.isString() && newData.val().length > 0 && newData.val().length <= 200"
+                  },
+                  "name": {
+                    ".validate": "newData.isString() && newData.val().length > 0 && newData.val().length <= 16"
+                  },
+                  "at": {
+                    ".validate": "newData.isNumber() && newData.val() > 0 && newData.val() <= now"
+                  },
+                  "$other": {
+                    ".validate": false
+                  }
+                }
+              },
+              "$other": {
+                ".validate": false
+              }
+            }
+          },
+          "$other": {
+            ".validate": false
+          }
+        }
+      }
     }
   }
 }

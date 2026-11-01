@@ -1,12 +1,13 @@
-import {writeFile} from 'node:fs/promises';
-const slots=Array.from({length:15},(_,i)=>'s'+String(i).padStart(2,'0'));
-const members=uid=>'('+slots.map(s=>`root.child('jejumungV5/rooms').child($room).child('seats/${s}/uid').val() == ${uid}`).join(' || ')+')';
+import {readFile,writeFile} from 'node:fs/promises';
+const previous=JSON.parse(await readFile(new URL('../database.rules.json',import.meta.url),'utf8'));
+const slots=Array.from({length:5},(_,i)=>'s'+String(i).padStart(2,'0'));
+const members=uid=>'('+slots.map(s=>`root.child('jejumungV6/rooms').child($room).child('seats/${s}/uid').val() == ${uid}`).join(' || ')+')';
 const ownMember=members('auth.uid'),ownerMember=members('$uid');
 const text=max=>({'.validate':`newData.isString() && newData.val().length > 0 && newData.val().length <= ${max}`});
 const seat={
  '.write':"auth != null && (!data.exists() || data.child('uid').val() == auth.uid) && (!newData.exists() || newData.child('uid').val() == auth.uid)",
- '.validate':"$slot.matches(/^s(0[0-9]|1[0-4])$/) && newData.hasChildren(['uid','name','gender','at','lease'])",
- uid:{'.validate':'newData.val() == auth.uid'},name:text(16),gender:{'.validate':"newData.val() == 'male' || newData.val() == 'female'"},
+ '.validate':"$slot.matches(/^s0[0-4]$/) && (!$room.matches(/^coast_hammock_/) || $slot != 's04') && newData.hasChildren(['uid','name','character','at','lease'])",
+ uid:{'.validate':'newData.val() == auth.uid'},name:text(16),character:{'.validate':"newData.val() == 'stone' || newData.val() == 'citrus' || newData.val() == 'cloud' || newData.val() == 'sprout'"},
  at:{'.validate':'newData.isNumber() && newData.val() > 0 && newData.val() <= now'},lease:text(64),'$other':{'.validate':false}
 };
 const message={'.validate':"newData.hasChildren(['text','name','at'])",text:text(200),name:text(16),at:{'.validate':'newData.isNumber() && newData.val() > 0 && newData.val() <= now'},'$other':{'.validate':false}};
@@ -16,7 +17,7 @@ const owner={
  seq:{'.validate':'newData.isNumber()'},lastAt:{'.validate':'newData.isNumber()'},
  slots:{'$message':{...message,'.validate':"$message.matches(/^m[0-4]$/) && newData.hasChildren(['text','name','at'])"}},'$other':{'.validate':false}
 };
-// The slot range is the server-enforced 15-person limit, not a client-only counter.
-const rules={rules:{'.read':false,'.write':false,jejumungV5:{rooms:{'$room':{'.read':'auth != null','.validate':"$room.matches(/^(coast_(sunbed|hammock|bench|paddle)|forest_(hammock|bench))_[0-9]{3}$/)",seats:{'$slot':seat},messages:{'$uid':owner},'$other':{'.validate':false}}}}}};
+// Preserve the previous namespace while old tabs finish. New rooms use 4–5 seats.
+const rules={rules:{'.read':false,'.write':false,jejumungV5:previous.rules.jejumungV5,jejumungV6:{rooms:{'$room':{'.read':'auth != null','.validate':"$room.matches(/^(coast_(sunbed|hammock|bench|paddle)|forest_(hammock|bench))_[0-9]{3}$/)",seats:{'$slot':seat},messages:{'$uid':owner},'$other':{'.validate':false}}}}}};
 await writeFile(new URL('../database.rules.json',import.meta.url),JSON.stringify(rules,null,2)+'\n');
-console.log('Built isolated room rules: 15 seat keys, owner-only claims, five ephemeral messages per guest, 1.5s server rate limit.');
+console.log('Built V6 rules: four coastal hammock seats, five other seats, four character IDs, owner-only claims and room chat. Preserved V5.');

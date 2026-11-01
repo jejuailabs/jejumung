@@ -1,0 +1,30 @@
+import{readFile,writeFile}from'node:fs/promises';
+let s=await readFile(new URL('../dist/avatar.js',import.meta.url),'utf8');
+s=s.replace('export function createAvatar(T){',"export function createCompanion(T,{character='stone'}={}){");
+s=s.replace("const openEyes=[],closedEyes=[];",`const clouds=[];
+ for(const [x,y,scale] of [[-.24,.13,.19],[.23,.13,.19],[0,.24,.21]])clouds.push(ball(neck,stone,[x,y,-.05],[scale,scale*.9,scale*.83]));
+ const openEyes=[],closedEyes=[];`);
+s=s.replace(/  ball\(eye,material\('#f3f0df'\)[\s\S]+?openEyes.push\(eye\);/,"  ball(eye,ink,[0,0,.015],[.022,.030,.012]);\n  openEyes.push(eye);");
+s=s.replace('gait,walking?1:0,10,dt','gait,walking?1:0,3.5,dt').replace('phase=walkTime*8','phase=walkTime*(Math.PI*2/1.9)');
+s=s.replaceAll('*.34*gait','*.16*gait').replaceAll('*.43*gait','*.24*gait').replaceAll('*.62*gait','*.30*gait').replace('*.010*gait','*.004*gait');
+s=s.replace("const resting=pose!=='walk',lying=pose==='lie',sitting=pose==='sit';",`const resting=pose!=='walk',lying=pose==='lie',sitting=pose==='sit';
+  for(const child of chest.children)if(child.material===leather||child.material===leatherDark||child.position.z<-.2)child.visible=!resting;`);
+s=s.replace("  root.userData.poseSettled=poseError<.025;",`  root.userData.poseSettled=poseError<.025;
+  root.userData.frame=Math.floor(phase/(Math.PI*2)*8)%8;root.userData.clip=walking?'walk':'idle';`);
+s=s.replace(' return{root,update,seatHeight:.365};',` function setCharacter(id){
+  character=['stone','citrus','cloud','sprout'].includes(id)?id:'stone';
+  const palettes={stone:['#65736a','#cdd5b7','#b7cba6','#8ca17e'],citrus:['#eaa04e','#ffdda0','#f3dfb4','#b7bd83'],cloud:['#e9e6dc','#fff9e5','#cadbdb','#9fb6b4'],sprout:['#8dab7a','#e3eac3','#d4ddb4','#8eaa7e']};
+  const colors=palettes[character];stone.color.set(colors[0]);face.color.set(colors[1]);cloth.color.set(colors[2]);rib.color.set(colors[3]);
+  poreMat.visible=character==='stone';poreMat.transparent=true;poreMat.opacity=character==='stone'?1:0;
+  clouds.forEach(m=>m.visible=character==='cloud');
+  neck.children.filter(m=>m.material===citrus).forEach(m=>m.visible=character==='stone');
+  citrusLeaf.visible=secondLeaf.visible=character!=='cloud';
+  citrusLeaf.scale.set(character==='sprout'?.16:character==='citrus'?.13:.076,.018,character==='sprout'?.055:.036);
+  secondLeaf.scale.set(character==='sprout'?.13:.045,.013,character==='sprout'?.045:.027);
+  citrusLeaf.position.y=character==='stone'?.475:.38;secondLeaf.position.y=character==='stone'?.483:.40;
+  neck.children.filter(m=>m.geometry?.type==='CylinderGeometry').forEach(m=>m.visible=character==='stone');
+  root.userData.character=character;
+ }
+ setCharacter(character);
+ return{root,update,setCharacter,ready:true,kind:'companion',seatHeight:.365};`);
+await writeFile(new URL('../dist/companion.js',import.meta.url),s);

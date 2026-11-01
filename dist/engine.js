@@ -1,16 +1,17 @@
-import { createLounge } from './lounge.js?v=rooms-5';
+import { createLounge } from './lounge.js?v=nature-6';
 import { attachMedia } from './media-player.js';
 import * as THREE from './vendor/three.module.js';
 import { CLIPS } from './clips.js';
 import { REST_SCENES, COAST_REST_IDS } from './rest-scenes.js';
-import { createTravelerAvatar } from './traveler-avatar.js?v=slow-walk-4';
+import {createCompanion} from './companion.js?v=nature-6';
+import {characterFor,mountCharacterPicker} from './characters.js';
 
 const $ = id => document.getElementById(id), video = $('source');
 const activeClip=CLIPS.find(clip=>clip.id===new URLSearchParams(location.search).get('clip'))||CLIPS[0];
 const isCoast=activeClip.id==='IMG_0575';
 const WALK_RATE=.72;
 video.defaultPlaybackRate=WALK_RATE;video.playbackRate=WALK_RATE;video.preservesPitch=true;
-let travelerGender='male';try{travelerGender=localStorage.getItem('jejumong-traveler')==='female'?'female':'male';}catch{}
+let selectedCharacter='stone';try{selectedCharacter=characterFor(localStorage.getItem('jejumong-character')).id;}catch{}
 const restEntryLabel=isCoast?'바다로 쉬러 가기':'숲으로 쉬러 가기';
 $('rest').textContent=$('stay').textContent=restEntryLabel;
 let pathTrack=null;
@@ -31,7 +32,7 @@ let restSceneId=isCoast?'coastLounge':'forest',restScene=REST_SCENES[restSceneId
 let restWidth=restScene.width,restHeight=restScene.height,spots=restScene.spots;
 let restPose='stand',restSpot=restScene.entrySpot,savedWalkTime=0;
 let restImageReady=true;
-let lane=0, laneTarget=0, lastFrame=performance.now();
+let lane=0, laneTarget=0, lastFrame=performance.now(),lastPaintAt=-Infinity;
 let restTransition=null,walkStartedAt=-Infinity;
 let mediaFailed=false,mediaWaiting=false,mediaWaitTimer,recoveryPosition=null;
 function showMediaNotice(message){$('mediaMessage').textContent=message;$('mediaNotice').hidden=resting;}
@@ -53,14 +54,14 @@ function samplePath(time){
 }
 function initialize3D(){
  renderer=new THREE.WebGLRenderer({antialias:true,alpha:true});renderer.setPixelRatio(Math.min(window.devicePixelRatio,2));renderer.outputColorSpace=THREE.SRGBColorSpace;renderer.setClearColor(0x000000,0);
- $('render').append(renderer.domElement);renderer.domElement.setAttribute('aria-label','이미지 프레임으로 움직이는 여행자');$('wave').textContent='인사하기';
+ $('render').append(renderer.domElement);renderer.domElement.setAttribute('aria-label','제주 친구 캐릭터');$('wave').textContent='인사하기';
  scene=new THREE.Scene();camera=new THREE.PerspectiveCamera(50,16/9,.05,150);scene.add(new THREE.HemisphereLight(0xe6efe3,0x243b39,2.7));
  // Draw the decoded footage in the same WebGL surface as the avatar. A native
  // video surface behind a transparent canvas can disappear in embedded browsers.
  videoTexture=new THREE.VideoTexture(video);videoTexture.colorSpace=THREE.SRGBColorSpace;
  const sun=new THREE.DirectionalLight(0xffd7a2,2.1);sun.position.set(-3,6,-4);scene.add(sun);
  const fill=new THREE.DirectionalLight(0xf3f1df,.7);fill.position.set(2,3,5);scene.add(fill);
- avatar=createTravelerAvatar(THREE,{gender:travelerGender,onError:showError});character=avatar.root;scene.add(character);
+ avatar=createCompanion(THREE,{character:selectedCharacter});character=avatar.root;scene.add(character);
  restCamera=new THREE.OrthographicCamera(-restWidth/2,restWidth/2,restHeight/2,-restHeight/2,.1,4000);restCamera.position.z=2000;
  const canvas=document.createElement('canvas');canvas.width=canvas.height=128;const ctx=canvas.getContext('2d'),gradient=ctx.createRadialGradient(64,64,3,64,64,62);gradient.addColorStop(0,'rgba(0,0,0,.6)');gradient.addColorStop(1,'rgba(0,0,0,0)');ctx.fillStyle=gradient;ctx.fillRect(0,0,128,128);
  shadow=new THREE.Mesh(new THREE.PlaneGeometry(1.15,.75),new THREE.MeshBasicMaterial({map:new THREE.CanvasTexture(canvas),transparent:true,depthWrite:false}));shadow.rotation.x=-Math.PI/2;scene.add(shadow);
@@ -69,6 +70,7 @@ function initialize3D(){
  $('renderStatus').textContent=supportsCharacter?'길 경로에 맞춘 여행자':'1인칭 시험 · 경로 불러오기 실패';
 }
 function render(now){
+ const interval=1000/(resting?4:entered?30:10);if(now-lastPaintAt<interval){requestAnimationFrame(render);return;}lastPaintAt=now;
  const dt=Math.min(.05,(now-lastFrame)/1000);lastFrame=now;
  if(entered&&!resting){if(keys.has('KeyA')||keys.has('ArrowLeft'))laneTarget=Math.max(-1,laneTarget-dt*1.7);if(keys.has('KeyD')||keys.has('ArrowRight'))laneTarget=Math.min(1,laneTarget+dt*1.7);}
  lane=THREE.MathUtils.damp(lane,laneTarget,9,dt);
@@ -119,7 +121,7 @@ function render(now){
   $('stage').dataset.poseReady=String(resting&&avatar.root.userData.poseSettled&&!restTransition);
   $('stage').dataset.travelerFrame=String(avatar.root.userData.frame);
   $('stage').dataset.travelerClip=avatar.root.userData.clip;
-  $('renderStatus').textContent=!avatar.ready?'여행자 이미지 준비 중…':!resting&&!inFrame?'바다를 바라보는 구간 · 여행자는 시야 밖':`${travelerGender==='female'?'여성':'남성'} 여행자 · ${resting?'잠깐 쉬어가기':moving?'여유롭게 걷기':'멈춰서 멍때리기'}`;
+  $('renderStatus').textContent=!avatar.ready?'친구 준비 중…':!resting&&!inFrame?'바다를 바라보는 구간 · 여행자는 시야 밖':`${characterFor(selectedCharacter).name} · ${resting?'잠깐 쉬어가기':moving?'여유롭게 걷기':'멈춰서 멍때리기'}`;
  }
  const duration=Number.isFinite(video.duration)?video.duration:activeClip.duration;
  const displayTime=recoveryPosition??video.currentTime;
@@ -169,10 +171,11 @@ function setPose(pose,spotId){
  $('help').textContent=isCoast?(restScene.allowedPoses?.length===1?'사진 속 자리 표시를 골라 편하게 누워보세요. Esc로 다시 걷기.':'해먹에 앉거나 누워보세요. 다른 자리 표시를 눌러 옮길 수 있어요. Esc로 다시 걷기.'):pose==='lie'?'해먹에서 잠깐 눈을 감아도 좋아요. 다른 해먹의 표시를 눌러 옮길 수 있어요.':'앉기·눕기를 누르거나 사진 속 자리 표시를 골라보세요. Esc로 다시 걷기.';
  const speechPlace=pose==='stand'?restScene.standing:spot;$('speech').style.left=`${speechPlace.x/restWidth*100}%`;$('speech').style.bottom=`${Math.min(90,100-(speechPlace.y-speechPlace.scale*1.9)/restHeight*100)}%`;
 }
-const lounge=createLounge($('lounge'),{onReturn:()=>start(),onGender:value=>{
- travelerGender=value;avatar?.setTraveler(value);try{localStorage.setItem('jejumong-traveler',value);}catch{}
- document.querySelectorAll('[data-traveler]').forEach(b=>b.setAttribute('aria-pressed',String(b.dataset.traveler===value)));
-}});
+const pickerUpdates=[];
+function chooseCharacter(id){selectedCharacter=characterFor(id).id;avatar?.setCharacter(selectedCharacter);try{localStorage.setItem('jejumong-character',selectedCharacter);}catch{}pickerUpdates.forEach(update=>update(selectedCharacter));}
+pickerUpdates.push(mountCharacterPicker($('travelerChoices'),selectedCharacter,chooseCharacter));
+pickerUpdates.push(mountCharacterPicker($('gateCharacters'),selectedCharacter,chooseCharacter));
+const lounge=createLounge($('lounge'),{onReturn:()=>start(),onCharacter:chooseCharacter});
 const requestedRoom=new URLSearchParams(location.search).get('room');
 function setRest(value){
  if(value===resting)return;
@@ -180,14 +183,13 @@ function setRest(value){
  resting=value;pause();keys.clear();comparing=false;document.body.classList.remove('compare','forest-mode');document.body.classList.toggle('lounge-mode',value);
  $('stage').hidden=value;$('walkPanel').hidden=value;$('lounge').hidden=!value;$('arrival').hidden=true;
  $('compare').setAttribute('aria-pressed','false');$('compare').textContent='원본과 비교';
- if(value){$('mediaNotice').hidden=true;lounge.enter({area:isCoast?'coast':'forest',traveler:travelerGender,requestedRoom:new URLSearchParams(location.search).get('room')});}
+ if(value){$('mediaNotice').hidden=true;lounge.enter({area:isCoast?'coast':'forest',traveler:selectedCharacter,requestedRoom:new URLSearchParams(location.search).get('room')});}
  else{lounge.leave();video.currentTime=savedWalkTime;$('help').textContent=walkHelp;}
 }
 
 function toggle(){if(video.paused)start();else pause();}
 $('enter').addEventListener('click',()=>{if(requestedRoom||new URLSearchParams(location.search).get('loungePreview')){entered=true;$('gate').hidden=true;setRest(true);}else start();});$('play').addEventListener('click',toggle);
 $('retryMedia').addEventListener('click',reloadMedia);$('reloadMedia').addEventListener('click',reloadMedia);
-document.querySelectorAll('[data-traveler]').forEach(button=>{button.setAttribute('aria-pressed',String(button.dataset.traveler===travelerGender));button.addEventListener('click',()=>{travelerGender=button.dataset.traveler;avatar?.setTraveler(travelerGender);try{localStorage.setItem('jejumong-traveler',travelerGender);}catch{}document.querySelectorAll('[data-traveler]').forEach(b=>b.setAttribute('aria-pressed',String(b.dataset.traveler===travelerGender)));});});
 $('rest').addEventListener('click',()=>{if(!entered)return;if(resting)start();else setRest(true);});
 $('sit').addEventListener('click',()=>setPose('sit'));
 $('lie').addEventListener('click',()=>setPose('lie'));
@@ -221,7 +223,7 @@ for(const id of['enter','play','hold','rest'])$(id).disabled=false;$('enter').te
 if(requestedRoom){$('walkTitle').textContent='제주에서 잠깐, 함께 쉬어요.';$('gate').querySelectorAll('p')[1].textContent='입장하면 링크의 쉼터 구역으로 연결됩니다.';}
 requestAnimationFrame(render);
 if(!supportsCharacter){$('first').disabled=true;$('first').textContent='캐릭터 경로 없음';$('compare').hidden=true;}
-else $('truth').textContent='영상별 길 경로 + 프레임 움직임 보정 · 가림·바닥 정밀도 시험 중';
+else $('truth').textContent='실제 산책 영상 + 길 위치 보정 · 제주 친구 캐릭터';
 $('pathDebug').hidden=new URLSearchParams(location.search).get('debug')!=='1';
 $('jump').addEventListener('click',()=>{pause();const target=THREE.MathUtils.clamp(Number($('jumpTime').value)||0,0,Number.isFinite(video.duration)?video.duration:activeClip.duration);if(Math.abs(video.currentTime-target)>.001){video.dataset.seeking='true';video.currentTime=target;}});
 video.dataset.seeking='false';video.addEventListener('seeking',()=>video.dataset.seeking='true');video.addEventListener('seeked',()=>video.dataset.seeking='false');

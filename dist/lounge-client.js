@@ -2,7 +2,7 @@ import {initializeApp,getApps} from 'https://www.gstatic.com/firebasejs/13.1.0/f
 import {initializeAuth,inMemoryPersistence,signInAnonymously} from 'https://www.gstatic.com/firebasejs/13.1.0/firebase-auth.js';
 import {getDatabase,ref,get,onValue,onDisconnect,runTransaction,remove,serverTimestamp,goOffline,goOnline} from 'https://www.gstatic.com/firebasejs/13.1.0/firebase-database.js';
 import {LOUNGE_FIREBASE} from './lounge-config.js';
-import {SEATS} from './lounge-scenes.js';
+import {sceneFor,parseRoom,LOUNGE_NAMESPACE} from './lounge-scenes.js';
 
 export function createLoungeClient(changed){
  const app=getApps().find(a=>a.name==='lounge')||initializeApp(LOUNGE_FIREBASE,'lounge');
@@ -10,7 +10,7 @@ export function createLoungeClient(changed){
  const handlers=new Map();
  let uid,login,current=null,subscriptions=[],seats={},messages={},connected=false,reconnecting=false,closed=true,generation=0;
  const check=attempt=>{if(closed||attempt!==generation)throw Object.assign(Error('Join cancelled'),{code:'join-cancelled'});};
- const path=id=>`jejumungV5/rooms/${id}`;
+ const path=id=>`${LOUNGE_NAMESPACE}/rooms/${id}`;
  const emit=()=>changed({uid,room:current?.room,seats,messages:Object.entries(messages).filter(([owner])=>Object.values(seats).some(s=>s.uid===owner)).flatMap(([owner,v])=>Object.entries(v.slots||{}).map(([key,m])=>({...m,id:owner+key,uid:owner}))).sort((a,b)=>a.at-b.at).slice(-50),connected});
  const init=async()=>{goOnline(db);if(!login)login=signInAnonymously(auth).then(r=>uid=r.user.uid).catch(e=>{login=null;throw e;});await login;};
  async function dispose(item){
@@ -23,7 +23,8 @@ export function createLoungeClient(changed){
  async function claim(room,profile,preferred,attempt=generation){
   const snapshot=(await get(ref(db,path(room)+'/seats'))).val()||{};
   check(attempt);
-  const keys=preferred?[preferred]:Array.from({length:SEATS},(_,i)=>'s'+String(i).padStart(2,'0'));
+  const available=sceneFor(parseRoom(room)).seats.map(s=>s.id);
+  const keys=preferred&&available.includes(preferred)?[preferred]:available;
   for(const key of keys){
    if(snapshot[key]&&snapshot[key].uid!==uid)continue;
    const seat=ref(db,path(room)+'/seats/'+key),disconnect=onDisconnect(seat),lease=crypto.randomUUID();
@@ -35,7 +36,7 @@ export function createLoungeClient(changed){
     if(handlers.get(room+'/'+key)===lease)await disconnect.cancel();
    }catch(e){if(handlers.get(room+'/'+key)===lease)await disconnect.cancel().catch(()=>{});throw e;}
   }
-  throw Object.assign(Error('이 구역의 15자리가 모두 찼어요.'),{code:'room-full'});
+  throw Object.assign(Error('이 구역의 자리가 모두 찼어요.'),{code:'room-full'});
  }
  function watch(){
   subscriptions.forEach(fn=>fn());subscriptions=[];

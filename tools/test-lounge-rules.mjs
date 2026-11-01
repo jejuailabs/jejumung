@@ -1,17 +1,19 @@
 // Isolated disposable QA rooms only. Public SDK key; user tokens stay in memory.
 import assert from 'node:assert/strict';
 import {LOUNGE_FIREBASE as conf} from '../dist/lounge-config.js';
-const root=conf.databaseURL+'/jejumungV5/rooms/coast_sunbed_998';
+const root=conf.databaseURL+'/jejumungV6/rooms/coast_sunbed_998';
 const users=[];let passed=[];
 async function signup(){const r=await fetch('https://identitytoolkit.googleapis.com/v1/accounts:signUp?key='+conf.apiKey,{method:'POST',headers:{'content-type':'application/json'},body:JSON.stringify({returnSecureToken:true})});const v=await r.json();assert.equal(r.status,200,JSON.stringify(v.error));users.push(v);return v;}
 async function request(path,user,method='GET',body,extra={}){return fetch(root+path+'.json'+(user?'?auth='+encodeURIComponent(user.idToken):''),{method,headers:{'content-type':'application/json',...extra},...(body===undefined?{}:{body:JSON.stringify(body)})});}
-const profile=u=>({uid:u.localId,name:'검증 여행자',gender:'male',at:{'.sv':'timestamp'},lease:'isolated-test'});
+const profile=u=>({uid:u.localId,name:'검증 친구',character:'stone',at:{'.sv':'timestamp'},lease:'isolated-test'});
 try{
  const a=await signup(),b=await signup();
  assert.equal((await request('/seats',null)).status,401);passed.push('unauthenticated read denied');
  assert.equal((await request('/seats/s00',a,'PUT',profile(a))).status,200);
  assert.equal((await request('/seats/s00',b,'PUT',profile(b))).status,401);passed.push('another guest cannot overwrite seat');
- assert.equal((await request('/seats/s15',a,'PUT',profile(a))).status,401);passed.push('16th seat denied by server');
+ assert.equal((await request('/seats/s05',a,'PUT',profile(a))).status,401);passed.push('6th seat denied by server');
+ assert.equal((await request('/seats/s03',a,'PUT',{...profile(a),character:'invalid'})).status,401);passed.push('unknown character denied');
+ const hammock=await fetch(conf.databaseURL+'/jejumungV6/rooms/coast_hammock_998/seats/s04.json?auth='+a.idToken,{method:'PUT',headers:{'content-type':'application/json'},body:JSON.stringify(profile(a))});assert.equal(hammock.status,401);passed.push('coastal hammock room has exactly four permitted seats');
  assert.equal((await request('/seats/s01',b,'PUT',profile(b))).status,200);
  const message={seq:1,lastAt:{'.sv':'timestamp'},slots:{m0:{text:'검증 메시지',name:'검증 여행자',at:{'.sv':'timestamp'}}}};
  assert.equal((await request('/messages/'+a.localId,a,'PUT',message)).status,200);passed.push('seated guest can chat');
