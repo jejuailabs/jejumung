@@ -117,3 +117,27 @@ body.game .lounge-fineprint{margin:0;flex:1 1 100%}
  .gate-card{padding:16px 6% 70px}
  .gate-stage{width:min(52%,220px)}
 }
+
+/* Home links, course end and the course map */
+.ghost-link{display:inline-flex;align-items:center;padding:9px 14px;border-radius:22px;background:var(--glass);border:1px solid var(--glass-border);color:#eef3ea;font-size:12px;text-decoration:none;backdrop-filter:blur(8px)}
+.ghost-link:hover{background:#ffffff22}
+body.game .arrival{left:50%;right:auto;bottom:auto;top:50%;transform:translate(-50%,-50%);width:min(520px,92%);padding:22px 24px;text-align:center}
+.arrival-title{font:clamp(18px,2.4vw,26px)/1.3 "Batang",serif;margin:0 0 6px}
+.arrival-next{color:#f4d072;font-size:12px;min-height:18px;margin:0 0 14px}
+.arrival-actions{display:flex;gap:8px;flex-wrap:wrap;justify-content:center}
+body.game .arrival button,body.game .arrival .ghost-link{margin:0;padding:9px 14px;font-size:12px;background:var(--glass);border:1px solid var(--glass-border);border-radius:22px;color:#eef3ea}
+body.game .arrival button.primary{background:#d9ead8;color:var(--ink);border-color:#e9f3e5;font-weight:700}
+.course-overlay{position:absolute;inset:0;z-index:9;background:#06100fcc;display:flex;align-items:center;justify-content:center;padding:16px;backdrop-filter:blur(6px)}
+.course-overlay-card{width:min(900px,100%);max-height:100%;overflow:auto;background:#0d1f1cf2;border:1px solid var(--glass-border);border-radius:16px;padding:14px 16px 16px;box-shadow:0 20px 80px #000a}
+.course-overlay-head{display:flex;align-items:center;gap:12px;margin-bottom:10px}
+.course-overlay-head strong{font:18px "Batang",serif;color:#eef3ea}
+.course-overlay-head span{font-size:11px;color:#9fc3b4;flex:1}
+.course-overlay-head button{padding:7px 12px;font-size:11px;background:var(--glass);border:1px solid var(--glass-border);border-radius:18px}
+.course-map{width:100%;height:auto;display:block;border-radius:14px}
+.course-pin{cursor:pointer}
+.course-pin image,.course-pin rect,.course-pin text{transition:transform .2s}
+.course-pin:hover circle:nth-child(2),.course-pin:focus-visible circle:nth-child(2){fill:#f4d072}
+.course-pin:focus-visible{outline:none}
+.lounge-heading-actions{display:flex;gap:8px;align-items:center}
+body.game .lounge-heading .ghost-link{padding:8px 12px;font-size:11px}
+@media(max-width:860px){body.game .arrival{padding:14px}.arrival-actions{gap:6px}body.game .arrival button,body.game .arrival .ghost-link{font-size:11px;padding:8px 10px}.course-overlay{padding:8px}.course-overlay-card{padding:10px}.course-overlay-head span{display:none}}

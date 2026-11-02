@@ -7,6 +7,7 @@ import {createCompanion,preloadCompanionAssets} from './companion.js?v=nature-8'
 import {characterFor,mountCharacterPicker} from './characters.js';
 import {createAudio} from './audio.js';
 import {createCharacterStage} from './character-stage.js?v=ui-9';
+import {createCourseMap,nextCourse} from './course-map.js';
 
 const $ = id => document.getElementById(id), video = $('source');
 const audio=createAudio();
@@ -342,7 +343,22 @@ $('again').addEventListener('click',()=>{video.currentTime=0;start();});$('stay'
 document.addEventListener('keydown',e=>{if(e.target.matches('input,textarea,[contenteditable=true]'))return;if(resting){if(e.code==='Escape'){e.preventDefault();start();}return;}if(['KeyW','ArrowUp','KeyA','KeyD','ArrowLeft','ArrowRight'].includes(e.code)){e.preventDefault();if(!keys.has(e.code)){keys.add(e.code);if(['KeyW','ArrowUp'].includes(e.code))start();}}if(e.code==='Space'&&!e.repeat&&!e.target.matches('button,a')){e.preventDefault();toggle();}});
 document.addEventListener('keyup',e=>{keys.delete(e.code);if(['KeyW','ArrowUp'].includes(e.code))pause();});
 window.addEventListener('blur',()=>{keys.clear();pause();});document.addEventListener('visibilitychange',()=>{if(document.hidden){keys.clear();pause();}});
-video.addEventListener('ended',()=>{$('arrival').hidden=false;});
+let arrivalTimer=null,arrivalTarget=null;
+function cancelArrival(){clearInterval(arrivalTimer);arrivalTimer=null;$('arrivalNext').textContent='';}
+function goToCourse(id,auto){location.href=`/engine?clip=${encodeURIComponent(id)}${auto?'&auto=1':''}`;}
+video.addEventListener('ended',()=>{
+ $('arrival').hidden=false;arrivalTarget=nextCourse(activeClip.id);let left=8;
+ const tick=()=>{$('arrivalNext').textContent=`${left}초 뒤 ${arrivalTarget.title}으로 이어 걸어요. 다른 걸 고르면 멈춰요.`;if(left--<=0){cancelArrival();goToCourse(arrivalTarget.id,true);}};
+ cancelArrival();tick();arrivalTimer=setInterval(tick,1000);
+});
+$('nextCourse').addEventListener('click',()=>{cancelArrival();goToCourse((arrivalTarget||nextCourse(activeClip.id)).id,true);});
+for(const id of['again','stay','pickCourse'])$(id).addEventListener('click',cancelArrival);
+let courseMap=null;
+function openMap(){cancelArrival();if(!courseMap)courseMap=createCourseMap($('courseMapCanvas'),{currentId:activeClip.id,onPick:id=>{if(id===activeClip.id){closeMap();return;}goToCourse(id,entered);}});$('courseMap').hidden=false;if(entered&&!resting)pause();}
+function closeMap(){$('courseMap').hidden=true;}
+$('openMap').addEventListener('click',openMap);$('pickCourse').addEventListener('click',openMap);$('closeMap').addEventListener('click',closeMap);
+$('courseMap').addEventListener('click',e=>{if(e.target===$('courseMap'))closeMap();});
+document.addEventListener('keydown',e=>{if(e.code==='Escape'&&!$('courseMap').hidden){e.preventDefault();closeMap();}});
 video.addEventListener('playing',()=>{walkStartedAt=performance.now();});
 video.addEventListener('loadedmetadata',()=>{
  $('timeline').max=video.duration;
@@ -359,6 +375,7 @@ requestAnimationFrame(render);
 if(!supportsCharacter){$('first').disabled=true;$('first').textContent='캐릭터 경로 없음';$('compare').hidden=true;}
 else $('truth').textContent='실제 산책 영상 + 길 위치 보정 · 제주 친구 캐릭터';
 const DEBUG=new URLSearchParams(location.search).get('debug')==='1';
+if(new URLSearchParams(location.search).get('auto')==='1'&&!requestedRoom){history.replaceState(null,'',location.pathname+'?clip='+encodeURIComponent(activeClip.id));setTimeout(()=>{if(!entered)start();},400);}
 $('pathDebug').hidden=!DEBUG;$('labTools').hidden=!DEBUG;if(DEBUG)document.body.classList.add('lab-mode');
 // The HUD fades while the walk plays and nothing is touched; any pointer brings it back.
 let hudTimer;const wakeHud=()=>{$('stage').classList.remove('hud-idle');clearTimeout(hudTimer);hudTimer=setTimeout(()=>{if(entered&&!resting&&!video.paused)$('stage').classList.add('hud-idle');},3500);};
