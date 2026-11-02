@@ -1,0 +1,89 @@
+{
+ "source": "YouTube Audio Library",
+ "tracks": [
+  {
+   "file": "/lab/bgm/01.m4a",
+   "title": "Across Seas And Lands",
+   "artist": "Asher Fulero",
+   "duration": 207.7
+  },
+  {
+   "file": "/lab/bgm/02.m4a",
+   "title": "City of the Wolf",
+   "artist": "The Mini Vandals",
+   "duration": 186.7
+  },
+  {
+   "file": "/lab/bgm/03.m4a",
+   "title": "Crystaline",
+   "artist": "Quincas Moreira",
+   "duration": 144.7
+  },
+  {
+   "file": "/lab/bgm/04.m4a",
+   "title": "Dew on the Roses",
+   "artist": "The Mini Vandals",
+   "duration": 95.7
+  },
+  {
+   "file": "/lab/bgm/05.m4a",
+   "title": "Final Soliloquy",
+   "artist": "Asher Fulero",
+   "duration": 183.6
+  },
+  {
+   "file": "/lab/bgm/06.m4a",
+   "title": "Glass Chinchilla",
+   "artist": "The Mini Vandals",
+   "duration": 100.0
+  },
+  {
+   "file": "/lab/bgm/07.m4a",
+   "title": "High Class",
+   "artist": "Benjamin Andrews",
+   "duration": 296.5
+  },
+  {
+   "file": "/lab/bgm/08.m4a",
+   "title": "Impossible Sacrifice",
+   "artist": "Asher Fulero",
+   "duration": 179.3
+  },
+  {
+   "file": "/lab/bgm/09.m4a",
+   "title": "Lace Tablecloths",
+   "artist": "The Mini Vandals",
+   "duration": 92.8
+  },
+  {
+   "file": "/lab/bgm/10.m4a",
+   "title": "Panoramic Arrival",
+   "artist": "Asher Fulero",
+   "duration": 161.0
+  },
+  {
+   "file": "/lab/bgm/11.m4a",
+   "title": "Pavane Op 50 (Gabriel Fauré)",
+   "artist": "Golden Cut Reborn",
+   "duration": 345.4
+  },
+  {
+   "file": "/lab/bgm/12.m4a",
+   "title": "Powdered Waltz",
+   "artist": "The Mini Vandals",
+   "duration": 134.5
+  },
+  {
+   "file": "/lab/bgm/13.m4a",
+   "title": "Redding Rainbow",
+   "artist": "Benjamin Andrews",
+   "duration": 190.2
+  },
+  {
+   "file": "/lab/bgm/14.m4a",
+   "title": "The Girl from Saint-Anne-des-Plaines",
+   "artist": "The Mini Vandals",
+   "duration": 95.8
+  }
+ ]
+}

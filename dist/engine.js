@@ -1,16 +1,18 @@
-import { createLounge } from './lounge.js?v=ui-9';
+import { createLounge } from './lounge.js?v=ui-12';
 import { attachMedia } from './media-player.js';
 import * as THREE from './vendor/three.module.js';
 import { CLIPS } from './clips.js';
 import { REST_SCENES, COAST_REST_IDS } from './rest-scenes.js';
 import {createCompanion,preloadCompanionAssets} from './companion.js?v=nature-8';
-import {characterFor,mountCharacterPicker} from './characters.js';
-import {createAudio} from './audio.js';
+import {characterFor,characterIcon,mountCharacterPicker} from './characters.js';
+import {createAudio} from './audio.js?v=ui-12';
+import {createBgm,NOTE_ICON} from './bgm.js?v=ui-12';
 import {createCharacterStage} from './character-stage.js?v=ui-9';
-import {createCourseMap,nextCourse} from './course-map.js';
+import {createCourseMap,nextCourse} from './course-map.js?v=map-2';
 
 const $ = id => document.getElementById(id), video = $('source');
-const audio=createAudio();
+const PLAY_ICON='<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M8 5.5v13l10.5-6.5z" fill="currentColor"/></svg>',PAUSE_ICON='<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M7 5h3.5v14H7zM13.5 5H17v14h-3.5z" fill="currentColor"/></svg>';
+const audio=createAudio(),bgm=createBgm(audio);
 const activeClip=CLIPS.find(clip=>clip.id===new URLSearchParams(location.search).get('clip'))||CLIPS[0];
 const isCoast=activeClip.id==='IMG_0575';
 // Clips marked `slow` were re-timed to 0.72x offline (every frame real, audio tempo matched),
@@ -258,7 +260,7 @@ function render(now){
  const displayTime=recoveryPosition??video.currentTime;
  $('readout').textContent=resting?`돌아갈 산책 위치 ${savedWalkTime.toFixed(2)}초`:`${displayTime.toFixed(2)} / ${duration.toFixed(2)}초`;if(document.activeElement!==$('timeline'))$('timeline').value=displayTime;
  if(!resting){$('playingState').textContent=mediaFailed?'영상 연결 오류 · 다시 불러오기':mediaWaiting?'영상 불러오는 중':!entered?'입장 전 · 영상 정지':video.paused?'멈춤 · W 또는 걷기 시작':`걷는 중 · 실제 영상 ${video.currentTime.toFixed(1)}초`;}
- $('play').textContent=video.paused?'걷기 시작':'걷기 멈춤';requestAnimationFrame(render);
+ const playState=video.paused?'paused':'playing';if($('play').dataset.state!==playState){$('play').dataset.state=playState;$('play').innerHTML=video.paused?PLAY_ICON+'<span>걷기</span>':PAUSE_ICON+'<span>멈춤</span>';}requestAnimationFrame(render);
 }
 function showError(text){$('error').hidden=false;$('error').textContent=text;}
 async function start(){audio.unlock();audio.attachVideo(video);if(!entered){entered=true;$('gate').hidden=true;gateStage?.stop();preloadLounge();}if(resting){const wasHeld=held;await setRest(false);held=wasHeld;}$('arrival').hidden=true;if(video.ended||video.currentTime>=video.duration-.03)video.currentTime=0;if(video.paused){walkStartedAt=performance.now();video.playbackRate=BASE_RATE*.62;}try{await video.play();}catch(e){if(e.name==='NotAllowedError'){video.muted=true;try{await video.play();}catch{}const unmute=()=>{if(audio.enabled)video.muted=false;document.removeEventListener('pointerdown',unmute);document.removeEventListener('keydown',unmute);};document.addEventListener('pointerdown',unmute);document.addEventListener('keydown',unmute);}else if(e.name!=='AbortError')showError('영상 재생에 실패했어요. 화면을 한 번 누른 뒤 다시 시도해 주세요.');}}
@@ -303,7 +305,7 @@ function setPose(pose,spotId){
  const speechPlace=pose==='stand'?restScene.standing:spot;$('speech').style.left=`${speechPlace.x/restWidth*100}%`;$('speech').style.bottom=`${Math.min(90,100-(speechPlace.y-speechPlace.scale*1.9)/restHeight*100)}%`;
 }
 const pickerUpdates=[];
-function chooseCharacter(id){selectedCharacter=characterFor(id).id;avatar?.setCharacter(selectedCharacter);gateStage?.setCharacter(selectedCharacter);try{localStorage.setItem('jejumong-character',selectedCharacter);}catch{}pickerUpdates.forEach(update=>update(selectedCharacter));}
+function chooseCharacter(id){selectedCharacter=characterFor(id).id;$('charButton').innerHTML=characterIcon(selectedCharacter);closeMenus();avatar?.setCharacter(selectedCharacter);gateStage?.setCharacter(selectedCharacter);try{localStorage.setItem('jejumong-character',selectedCharacter);}catch{}pickerUpdates.forEach(update=>update(selectedCharacter));}
 pickerUpdates.push(mountCharacterPicker($('travelerChoices'),selectedCharacter,chooseCharacter));
 pickerUpdates.push(mountCharacterPicker($('gateCharacters'),selectedCharacter,chooseCharacter));
 const lounge=createLounge($('lounge'),{onReturn:()=>start(),onCharacter:chooseCharacter,audio});
@@ -327,7 +329,7 @@ function applyRest(value){
 }
 
 function toggle(){if(video.paused)start();else pause();}
-$('enter').addEventListener('click',()=>{audio.unlock();audio.attachVideo(video);if(requestedRoom||new URLSearchParams(location.search).get('loungePreview')){entered=true;$('gate').hidden=true;gateStage?.stop();setRest(true);}else start();});$('play').addEventListener('click',toggle);
+$('enter').addEventListener('click',()=>{audio.unlock();audio.attachVideo(video);if(requestedRoom||new URLSearchParams(location.search).get('loungePreview')){entered=true;$('gate').hidden=true;gateStage?.stop();setRest(true);}else start();});
 $('retryMedia').addEventListener('click',reloadMedia);$('reloadMedia').addEventListener('click',reloadMedia);
 $('rest').addEventListener('click',()=>{if(!entered)return;if(resting)start();else setRest(true);});
 $('sit').addEventListener('click',()=>setPose('sit'));
@@ -335,15 +337,31 @@ $('lie').addEventListener('click',()=>setPose('lie'));
 $('stand').addEventListener('click',()=>setPose('stand'));
 $('forestSpots').addEventListener('click',event=>{const button=event.target.closest('[data-spot]');if(button&&resting){const spot=spots[button.dataset.spot];setPose((spot.allowed||[spot.pose]).includes(restPose)?restPose:spot.pose,button.dataset.spot);}});
 document.querySelectorAll('[data-rest-scene]').forEach(button=>button.addEventListener('click',()=>{if(resting)setRestScene(button.dataset.restScene);}));
-$('hold').addEventListener('pointerdown',event=>{event.preventDefault();$('hold').setPointerCapture(event.pointerId);held=true;start();});
-for(const event of['pointerup','pointercancel','lostpointercapture'])$('hold').addEventListener(event,()=>{if(held)pause();});
-$('hold').addEventListener('keydown',e=>{if(['Space','Enter'].includes(e.code)){e.preventDefault();if(!e.repeat){held=true;start();}}});
-$('hold').addEventListener('keyup',e=>{if(['Space','Enter'].includes(e.code)){e.preventDefault();pause();}});
+// One walk button: a tap toggles walking, pressing and holding walks only while held.
+let pressAt=0,pressStarted=false;
+$('play').addEventListener('pointerdown',event=>{if(event.button)return;$('play').setPointerCapture(event.pointerId);pressAt=performance.now();pressStarted=video.paused||resting;if(pressStarted)start();});
+$('play').addEventListener('pointerup',()=>{if(!pressAt)return;const long=performance.now()-pressAt>450;pressAt=0;if(!pressStarted||long)pause();});
+$('play').addEventListener('pointercancel',()=>{pressAt=0;});
+$('play').addEventListener('click',event=>{if(event.detail===0)toggle();});
+$('play').addEventListener('contextmenu',event=>event.preventDefault());
+// Compact HUD: the character chip and the menu open small panels above the bar.
+function openMenu(id,button){const open=$(id).hidden;closeMenus();if(open){$(id).hidden=false;$(button).setAttribute('aria-expanded','true');}}
+function closeMenus(){for(const[id,button]of[['charMenu','charButton'],['hudMenu','menuButton']]){$(id).hidden=true;$(button).setAttribute('aria-expanded','false');}}
+$('charButton').addEventListener('click',()=>openMenu('charMenu','charButton'));
+$('menuButton').addEventListener('click',()=>openMenu('hudMenu','menuButton'));
+document.addEventListener('pointerdown',event=>{if(!event.target.closest('.hud-pop,#charButton,#menuButton'))closeMenus();});
+document.addEventListener('keydown',event=>{if(event.code==='Escape')closeMenus();});
+$('hudMenu').addEventListener('click',event=>{if(event.target.closest('#rest,#openMap,a'))closeMenus();});
+$('charButton').innerHTML=characterIcon(selectedCharacter);
+$('bgmButton').innerHTML=NOTE_ICON;$('bgmButton').addEventListener('click',()=>bgm.toggle());
+bgm.onChange(({on,playing})=>{$('bgmButton').setAttribute('aria-pressed',String(on&&playing));});
+document.addEventListener('jejumong:bgm',()=>bgm.toggle());
+$('steps').addEventListener('click',()=>audio.setSteps(!audio.steps));
 $('first').addEventListener('click',()=>{firstPerson=!firstPerson;$('first').setAttribute('aria-pressed',String(firstPerson));$('first').textContent=firstPerson?'캐릭터 보기':'1인칭 보기';});
 $('compare').addEventListener('click',()=>{comparing=!comparing;document.body.classList.toggle('compare',comparing);$('compare').setAttribute('aria-pressed',String(comparing));$('compare').textContent=comparing?'합성 화면으로 돌아가기':'원본과 비교';$('sceneLabel').textContent=comparing?'웹용 영상만 표시 · 영상 재생 상태는 유지':`${activeClip.file} · ${activeClip.title}`;});
 $('sound').addEventListener('click',()=>audio.setEnabled(!audio.enabled));
 $('volume').addEventListener('input',()=>audio.setVolume(Number($('volume').value)));
-audio.onChange(({enabled,volume})=>{$('sound').setAttribute('aria-pressed',String(enabled));$('sound').textContent=enabled?'소리 켬':'소리 끔';$('volume').value=String(volume);$('volume').disabled=!enabled;});
+audio.onChange(({enabled,volume,steps})=>{$('steps').setAttribute('aria-pressed',String(steps));$('steps').textContent=steps?'발소리 켬':'발소리 끔';$('sound').setAttribute('aria-pressed',String(enabled));$('sound').textContent=enabled?'소리 켬':'소리 끔';$('volume').value=String(volume);$('volume').disabled=!enabled;});
 $('timeline').addEventListener('input',()=>{video.currentTime=Number($('timeline').value);$('arrival').hidden=true;});
 $('wave').addEventListener('click',()=>{waveUntil=performance.now()+2300;$('speech').hidden=false;$('speech').textContent='반가워요. 잠깐 쉬다 가요.';setTimeout(()=>$('speech').hidden=true,2300);});
 $('again').addEventListener('click',()=>{video.currentTime=0;start();});$('stay').addEventListener('click',()=>setRest(true));
@@ -361,7 +379,7 @@ video.addEventListener('ended',()=>{
 $('nextCourse').addEventListener('click',()=>{cancelArrival();goToCourse((arrivalTarget||nextCourse(activeClip.id)).id,true);});
 for(const id of['again','stay','pickCourse'])$(id).addEventListener('click',cancelArrival);
 let courseMap=null;
-function openMap(){cancelArrival();if(!courseMap)courseMap=createCourseMap($('courseMapCanvas'),{currentId:activeClip.id,onPick:id=>{if(id===activeClip.id){closeMap();return;}goToCourse(id,entered);}});$('courseMap').hidden=false;if(entered&&!resting)pause();}
+function openMap(){cancelArrival();closeMenus();$('courseMap').hidden=false;if(!courseMap)courseMap=createCourseMap($('courseMapCanvas'),{currentId:activeClip.id,modal:true,onPick:id=>{if(id===activeClip.id){closeMap();return;}goToCourse(id,entered);}});else courseMap.refresh();if(entered&&!resting)pause();}
 function closeMap(){$('courseMap').hidden=true;}
 $('openMap').addEventListener('click',openMap);$('pickCourse').addEventListener('click',openMap);$('closeMap').addEventListener('click',closeMap);
 $('courseMap').addEventListener('click',e=>{if(e.target===$('courseMap'))closeMap();});
@@ -376,7 +394,7 @@ for(const event of['waiting','stalled','seeking'])video.addEventListener(event,q
 video.addEventListener('error',()=>{clearTimeout(mediaWaitTimer);mediaFailed=true;showMediaNotice('영상을 불러오지 못했습니다. 인터넷 연결을 확인한 뒤 다시 불러오세요.');});
 let gateStage=null;
 try{initialize3D();try{gateStage=createCharacterStage($('gateStage'),{character:selectedCharacter});gateStage.start();}catch(e){console.warn('캐릭터 미리보기 사용 불가',e);}}catch(e){renderer=null;$('renderStatus').textContent='3D 사용 불가';showError('WebGL 3D를 시작할 수 없습니다. 영상 조작만 가능합니다. 오류: '+e.message);$('first').disabled=true;}
-for(const id of['enter','play','hold','rest'])$(id).disabled=false;$('enter').textContent=requestedRoom?'함께 쉬는 구역으로 들어가기 →':'영상 속 길로 들어가기 →';
+for(const id of['enter','play','rest'])$(id).disabled=false;$('enter').textContent=requestedRoom?'함께 쉬는 구역으로 들어가기 →':'영상 속 길로 들어가기 →';
 if(requestedRoom){$('walkTitle').textContent='제주에서 잠깐, 함께 쉬어요.';$('gate').querySelectorAll('p')[1].textContent='입장하면 링크의 쉼터 구역으로 연결됩니다.';}
 requestAnimationFrame(render);
 if(!supportsCharacter){$('first').disabled=true;$('first').textContent='캐릭터 경로 없음';$('compare').hidden=true;}
@@ -385,7 +403,7 @@ const DEBUG=new URLSearchParams(location.search).get('debug')==='1';
 if(new URLSearchParams(location.search).get('auto')==='1'&&!requestedRoom){history.replaceState(null,'',location.pathname+'?clip='+encodeURIComponent(activeClip.id));setTimeout(()=>{if(!entered)start();},400);}
 $('pathDebug').hidden=!DEBUG;$('labTools').hidden=!DEBUG;if(DEBUG)document.body.classList.add('lab-mode');
 // The HUD fades while the walk plays and nothing is touched; any pointer brings it back.
-let hudTimer;const wakeHud=()=>{$('stage').classList.remove('hud-idle');clearTimeout(hudTimer);hudTimer=setTimeout(()=>{if(entered&&!resting&&!video.paused)$('stage').classList.add('hud-idle');},3500);};
+let hudTimer;const wakeHud=()=>{$('stage').classList.remove('hud-idle');clearTimeout(hudTimer);hudTimer=setTimeout(()=>{if(entered&&!resting&&!video.paused&&$('hudMenu').hidden&&$('charMenu').hidden)$('stage').classList.add('hud-idle');},3500);};
 for(const type of['pointermove','pointerdown','keydown','touchstart'])document.addEventListener(type,wakeHud,{passive:true});video.addEventListener('play',wakeHud);video.addEventListener('pause',()=>$('stage').classList.remove('hud-idle'));
 // Warm the lounge assets for this clip's area while the walk plays.
 let loungePreloaded=false;function preloadLounge(){if(loungePreloaded)return;loungePreloaded=true;const scenes=isCoast?['coastHammocks','coastLounge','coastPaddles']:['forest'];
@@ -393,7 +411,7 @@ let loungePreloaded=false;function preloadLounge(){if(loungePreloaded)return;lou
  audio.load(`/lab/audio/${isCoast?'coast':'forest'}.m4a`).catch(()=>{});}
 // Read-only inspection hook for local verification (foot planting, speed, lighting).
 window.__jejumong={
- get audio(){return audio.debug();},
+ get audio(){return audio.debug();},get bgm(){return bgm.debug();},
  get audioApi(){return audio;},
  get state(){const t=video.currentTime,path=samplePath(t);return{clip:activeClip.id,time:t,rate:video.playbackRate,slow:Boolean(activeClip.slow),refinedPath:Boolean(pathTrack30),path,distance:walkDistance,speed:walkSpeed,gait:avatar?.root.userData.gait,phase:avatar?.root.userData.phase,feet:avatar?.root.userData.feet,sunIntensity:sun?.intensity,hemiIntensity:hemi?.intensity};},
  ankleScreen(side){if(!character||!renderer)return null;character.updateMatrixWorld(true);const ankle=character.getObjectByName(side==='left'?'left-hip':'right-hip').getObjectByName('knee').getObjectByName('ankle'),v=new THREE.Vector3();ankle.getWorldPosition(v);v.project(camera);return{x:(v.x+1)/2,y:(1-v.y)/2,world:ankle.getWorldPosition(new THREE.Vector3()).toArray()};}

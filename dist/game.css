@@ -19,18 +19,34 @@ body.game .playing-state{display:none}
 .hud .progress{position:absolute;left:0;right:0;bottom:0;width:100%;height:4px;margin:0;appearance:none;background:#ffffff22;cursor:pointer;accent-color:var(--mint)}
 .hud .progress::-webkit-slider-thumb{appearance:none;width:12px;height:12px;border-radius:50%;background:var(--mint);box-shadow:0 0 0 3px #0008}
 .hud .progress::-moz-range-thumb{width:12px;height:12px;border:0;border-radius:50%;background:var(--mint)}
-.hud-row{display:flex;align-items:center;gap:12px}
-.hud-main{display:flex;gap:8px;flex-wrap:wrap;justify-content:center;flex:1}
-.hud button{font-size:12px;padding:10px 16px;background:var(--glass);border:1px solid var(--glass-border);backdrop-filter:blur(8px);border-radius:22px;color:#eef3ea}
-.hud button.primary{background:#d9ead8;color:var(--ink);border-color:#e9f3e5;font-weight:700;min-width:118px}
+.hud-row{display:grid;grid-template-columns:1fr auto 1fr;align-items:center;gap:10px}
+.hud-main{display:flex;gap:8px;justify-content:center}
+.hud button{font-size:12px;padding:10px 16px;background:var(--glass);border:1px solid var(--glass-border);backdrop-filter:blur(8px);border-radius:22px;color:#eef3ea;white-space:nowrap}
+.hud button.primary{display:inline-flex;align-items:center;justify-content:center;gap:6px;background:#d9ead8;color:var(--ink);border-color:#e9f3e5;font-weight:700;min-width:116px;height:44px;font-size:13px;user-select:none;-webkit-user-select:none;-webkit-touch-callout:none;touch-action:manipulation}
+.hud button.primary svg{width:18px;height:18px}
 .hud button[aria-pressed=true]{background:#b7ded644;border-color:#b7ded6}
-.hud-side{display:flex;align-items:center;gap:6px}
+.hud-side{display:flex;align-items:center;gap:8px;justify-content:flex-end}
+.hud .hud-round{width:44px;height:44px;padding:0;display:inline-grid;place-items:center;border-radius:50%}
+.hud .hud-round svg{width:22px;height:22px}
+.hud .hud-char{justify-self:start;background:#d9ead826}
+.hud .hud-char svg{width:28px;height:32px}
 .hud .hint{margin:8px 0 0;text-align:center;font-size:10px;color:#ffffff88;letter-spacing:.3px}
-#travelerChoices.character-picker{margin:0;gap:5px}
-#travelerChoices.character-picker button{padding:4px 9px 4px 5px;border-radius:20px;background:var(--glass);border:1px solid var(--glass-border)}
+/* Panels that open above the HUD bar */
+.hud-pop{position:absolute;bottom:calc(100% - 14px);z-index:6;min-width:220px;max-width:calc(100% - 20px);padding:10px;background:#0c1d1af0;border:1px solid var(--glass-border);border-radius:16px;box-shadow:0 14px 40px #000a;backdrop-filter:blur(12px);display:flex;flex-direction:column;gap:6px;animation:pop-in .16s ease-out}
+.hud-pop[hidden]{display:none}
+.hud-pop-left{left:14px}.hud-pop-right{right:14px}
+.hud-pop-title{margin:0 2px 2px;font-size:11px;color:#9fc3b4}
+.hud-pop>button,.hud-pop-link{width:100%;text-align:left;padding:11px 14px;border-radius:12px;font-size:13px}
+.hud-pop-link{display:block;color:#eef3ea;text-decoration:none;background:var(--glass);border:1px solid var(--glass-border)}
+.hud-pop-row{display:flex;align-items:center;gap:10px}.hud-pop-row button{flex:0 0 auto;padding:11px 14px;border-radius:12px;font-size:13px}.hud-pop-row input{flex:1;min-width:0;accent-color:var(--mint)}
+@keyframes pop-in{from{opacity:0;transform:translateY(6px)}to{opacity:1;transform:none}}
+#travelerChoices.character-picker{margin:0;gap:6px;display:grid;grid-template-columns:1fr 1fr}
+#travelerChoices.character-picker button{display:flex;align-items:center;gap:6px;padding:6px 10px 6px 6px;border-radius:14px;background:var(--glass);border:1px solid var(--glass-border);text-align:left}
 #travelerChoices.character-picker button[aria-pressed=true]{background:#d9ead8;color:#173c31}
-#travelerChoices.character-picker svg{width:22px;height:26px}
-#travelerChoices.character-picker span{font-size:10px}
+#travelerChoices.character-picker svg{width:26px;height:30px;flex:0 0 auto}
+#travelerChoices.character-picker span{font-size:12px}
+#travelerChoices.character-picker small{display:none}
+body.bgm-on .hud{padding-bottom:62px}
 /* Gate */
 body.game .gate{background:linear-gradient(90deg,#06100fd0,#06100f88 55%,#06100f30);padding:0;justify-content:flex-start;align-items:stretch}
 .gate-card{display:flex;align-items:center;gap:24px;width:100%;height:100%;padding:0 6%}
@@ -91,8 +107,8 @@ body.game .lounge-fineprint{margin:0;flex:1 1 100%}
 @keyframes bubble-in{from{opacity:0;transform:translate(-50%,-90%) scale(.8)}to{opacity:1;transform:translate(-50%,-100%) scale(var(--tag-scale,1))}}
 .nature-bubble.out{opacity:0;transition:opacity .5s}
 @media(max-width:860px){
- .hud{padding:22px 10px 12px}.hud-row{gap:6px}.hud button{font-size:11px;padding:8px 11px}.hud button.primary{min-width:92px}.hud .hint{display:none}
- #travelerChoices.character-picker span{display:none}#travelerChoices.character-picker button{padding:4px 5px}
+ .hud{padding:22px 12px calc(14px + env(safe-area-inset-bottom))}.hud-row{gap:8px}.hud .hint{display:none}
+ body.bgm-on .hud{padding-bottom:calc(64px + env(safe-area-inset-bottom))}
  .gate-card{flex-direction:column;justify-content:center;gap:8px;padding:10px 5%}.gate-stage{width:min(44%,180px)}.gate-copy{text-align:center}
  body.game .gate h1{font-size:22px;margin:2px 0 6px}.gate-copy .sub{font-size:11px;margin-bottom:6px}body.game .gate .character-picker{justify-content:center}body.game .gate button#enter{margin-top:10px;padding:10px 22px;font-size:12px}
  /* Small screens: the scene stays clean; heading, toolbar, caption and chat stack around it. */
@@ -133,11 +149,33 @@ body.game .arrival button.primary{background:#d9ead8;color:var(--ink);border-col
 .course-overlay-head strong{font:18px "Batang",serif;color:#eef3ea}
 .course-overlay-head span{font-size:11px;color:#9fc3b4;flex:1}
 .course-overlay-head button{padding:7px 12px;font-size:11px;background:var(--glass);border:1px solid var(--glass-border);border-radius:18px}
-.course-map{width:100%;height:auto;display:block;border-radius:14px}
-.course-pin{cursor:pointer}
-.course-pin image,.course-pin rect,.course-pin text{transition:transform .2s}
-.course-pin:hover circle:nth-child(2),.course-pin:focus-visible circle:nth-child(2){fill:#f4d072}
-.course-pin:focus-visible{outline:none}
 .lounge-heading-actions{display:flex;gap:8px;align-items:center}
 body.game .lounge-heading .ghost-link{padding:8px 12px;font-size:11px}
 @media(max-width:860px){body.game .arrival{padding:14px}.arrival-actions{gap:6px}body.game .arrival button,body.game .arrival .ghost-link{font-size:11px;padding:8px 10px}.course-overlay{padding:8px}.course-overlay-card{padding:10px}.course-overlay-head span{display:none}}
+
+/* Background music dock: a minimised bar at the bottom, the track list opens above it. */
+.bgm-dock{position:fixed;left:50%;bottom:calc(8px + env(safe-area-inset-bottom));transform:translateX(-50%);z-index:40;width:min(460px,calc(100vw - 16px));font-size:12px;color:#eef3ea}
+.bgm-dock[hidden]{display:none}
+.bgm-bar{display:flex;align-items:center;gap:2px;height:46px;padding:0 6px 0 12px;background:#0c1d1ae8;border:1px solid var(--glass-border);border-radius:23px;box-shadow:0 8px 30px #0008;backdrop-filter:blur(12px)}
+.bgm-title{flex:1;min-width:0;display:flex;flex-direction:column;align-items:flex-start;gap:0;margin:0 4px 0 8px;padding:0;background:none;border:0;color:inherit;text-align:left;cursor:pointer}
+.bgm-title b,.bgm-title small{max-width:100%;overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+.bgm-title b{font-size:12px;font-weight:600}.bgm-title small{font-size:10px;color:#9fc3b4}
+.bgm-btn{width:34px;height:34px;flex:0 0 auto;display:grid;place-items:center;padding:0;margin:0;background:none;border:0;border-radius:50%;color:#dfeee6;cursor:pointer}
+.bgm-btn:hover{background:#ffffff18}.bgm-btn svg{width:18px;height:18px}
+.bgm-toggle{background:#d9ead8;color:#102527}.bgm-toggle:hover{background:#eef6ec}
+.bgm-eq{display:flex;align-items:flex-end;gap:2px;width:14px;height:14px;flex:0 0 auto}
+.bgm-eq i{flex:1;height:30%;background:var(--mint);border-radius:1px}
+.bgm-dock.playing .bgm-eq i{animation:eq .9s ease-in-out infinite alternate}
+.bgm-dock.playing .bgm-eq i:nth-child(2){animation-delay:-.4s}.bgm-dock.playing .bgm-eq i:nth-child(3){animation-delay:-.7s}
+@keyframes eq{from{height:20%}to{height:100%}}
+.bgm-list{position:absolute;left:0;right:0;bottom:54px;max-height:min(56vh,420px);display:flex;flex-direction:column;background:#0c1d1af2;border:1px solid var(--glass-border);border-radius:16px;box-shadow:0 14px 40px #000a;backdrop-filter:blur(12px);overflow:hidden;animation:pop-in .16s ease-out}
+.bgm-list[hidden]{display:none}
+.bgm-list-head{display:flex;align-items:center;gap:10px;padding:12px 14px 8px}
+.bgm-list-head strong{font-size:13px;flex:1}.bgm-list-head label{display:flex;align-items:center;gap:6px;font-size:10px;color:#9fc3b4}.bgm-list-head input{width:92px;accent-color:var(--mint)}
+.bgm-list ol{list-style:none;margin:0;padding:0 6px 6px;overflow:auto}
+.bgm-list li button{width:100%;display:flex;flex-direction:column;align-items:flex-start;gap:1px;padding:8px 10px;margin:0;background:none;border:0;border-radius:10px;color:#eef3ea;text-align:left;cursor:pointer}
+.bgm-list li button:hover{background:#ffffff12}
+.bgm-list li button[aria-current=true]{background:#b7ded626}.bgm-list li button[aria-current=true] span::before{content:'♪ ';color:var(--mint)}
+.bgm-list li span{font-size:12px}.bgm-list li small{font-size:10px;color:#9fc3b4}
+.bgm-credit{margin:0;padding:8px 14px 10px;font-size:10px;color:#ffffff70;border-top:1px solid #ffffff14}
+body.bgm-on.lounge-mode{padding-bottom:66px}

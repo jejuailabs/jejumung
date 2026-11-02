@@ -1,0 +1,44 @@
+/* Jeju course map (course-map.js): Leaflet over the rendered basemap, place labels and course cards. */
+.jeju-map{position:relative;width:100%}
+.jeju-map-canvas{width:100%;aspect-ratio:16/9;min-height:300px;max-height:calc(100svh - 140px);background:#0d2a33;border-radius:14px;font:12px/1.35 "Malgun Gothic","Apple SD Gothic Neo",sans-serif;outline:none}
+.jeju-map.compact .jeju-map-canvas{aspect-ratio:1/1;max-height:calc(100svh - 110px)}
+.jeju-map-hint{position:absolute;left:50%;top:50%;transform:translate(-50%,-50%);z-index:900;margin:0;padding:8px 14px;border-radius:18px;background:#000b;color:#fff;font-size:12px;pointer-events:none}
+.jeju-map-error{margin:0;padding:40px 16px;text-align:center;color:#cfe3da}
+.jeju-map .leaflet-container{background:#0d2a33}
+/* Controls in the app's glass style */
+.jeju-map .leaflet-bar{border:1px solid #ffffff2a;border-radius:12px;overflow:hidden;box-shadow:0 6px 20px #0006}
+.jeju-map .leaflet-bar a{width:34px;height:34px;line-height:32px;background:#0c1d1ae6;color:#eef3ea;border-bottom-color:#ffffff1f;font:18px/32px system-ui,sans-serif}
+.jeju-map .leaflet-bar a:hover{background:#1d3a35;color:#fff}
+.jeju-map .leaflet-bar a.leaflet-disabled{background:#0c1d1ab3;color:#ffffff40}
+.jeju-map .leaflet-control-attribution{background:#06100fb3;color:#b9cfc6;font-size:9px;padding:1px 8px;border-top-left-radius:8px}
+.jeju-map .leaflet-control-attribution a{color:#d9ead8}
+/* Place labels */
+.cm-town span,.cm-peak span{position:absolute;transform:translate(-50%,-50%);white-space:nowrap;pointer-events:none;color:#f3f1e4;text-shadow:0 0 3px #1f3b2b,0 0 6px #1f3b2bcc,0 1px 1px #000a;letter-spacing:.5px}
+.cm-town span{font-size:11px;opacity:.78}
+.cm-town.major span{font-size:14px;font-weight:700;opacity:.95;letter-spacing:1px}
+.cm-peak i{position:absolute;left:-4px;top:-6px;border:4px solid transparent;border-bottom:7px solid #f3eedb;border-top:0;filter:drop-shadow(0 1px 1px #0008)}
+.cm-peak span{top:11px;font-size:10px;opacity:.85}
+.cm-peak.major i{left:-6px;top:-10px;border-width:0 6px 10px}
+.cm-peak.major span{top:15px;font-size:12px;font-weight:700;opacity:1}
+.cm-peak small{font-weight:400;opacity:.8;font-size:9px}
+[data-zoom=far] .cm-town:not(.major),[data-zoom=far] .cm-peak:not(.major){display:none}
+[data-zoom=mid] .cm-peak:not(.major) span{display:none}
+/* Course pins and cards */
+.cm-marker{overflow:visible}
+.cm-pin{position:absolute;left:0;top:0}
+.cm-leader{position:absolute;left:0;top:0;width:1px;height:1px;overflow:visible;pointer-events:none}
+.cm-leader line{stroke:#f4f1e2;stroke-width:1.5;stroke-dasharray:3 3;opacity:.85;filter:drop-shadow(0 1px 1px #0009)}
+.cm-dot{position:absolute;left:-8px;top:-8px;width:16px;height:16px;border-radius:50%;background:#eef3ea;border:3px solid #102527;box-shadow:0 2px 6px #0009;cursor:pointer}
+.cm-pin.current .cm-dot{background:#f4d072}
+.cm-pin.current .cm-dot::after{content:'';position:absolute;inset:-12px;border-radius:50%;border:2px solid #f4d072;animation:cm-pulse 2s ease-out infinite}
+@keyframes cm-pulse{from{transform:scale(.4);opacity:1}to{transform:scale(1.4);opacity:0}}
+.cm-card{position:absolute;left:var(--dx);top:var(--dy);transform:translate(-50%,-50%);width:136px;margin:0;padding:0 0 7px;display:flex;flex-direction:column;align-items:stretch;gap:1px;background:#102527f0;border:1px solid #ffffff30;border-radius:12px;overflow:hidden;color:#eef3ea;text-align:center;cursor:pointer;box-shadow:0 8px 24px #000a;transition:transform .18s ease,border-color .18s ease;font:inherit}
+.cm-card:hover,.cm-card:focus-visible{transform:translate(-50%,-50%) scale(1.06);border-color:#f4d072;outline:none;z-index:2}
+.cm-card img{width:100%;aspect-ratio:16/9;object-fit:cover;display:block;margin-bottom:5px;background:#1d3a35}
+.cm-card b{font-size:13px;font-weight:700;padding:0 6px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+.cm-card small{font-size:10px;color:#b7ded6;padding:0 6px;white-space:nowrap}
+.cm-card em{position:absolute;top:6px;left:6px;padding:2px 7px;border-radius:9px;background:#f4d072;color:#102527;font-style:normal;font-size:10px;font-weight:700}
+.cm-pin.current .cm-card{border-color:#f4d072}
+.jeju-map.compact .cm-card{width:84px;padding-bottom:4px;border-radius:9px}
+.jeju-map.compact .cm-card em{top:3px;left:3px;font-size:9px;padding:1px 5px}
+.jeju-map.compact .cm-card b{font-size:11px;white-space:normal;line-height:1.2}.jeju-map.compact .cm-card small{font-size:9px}.jeju-map.compact .cm-card img{margin-bottom:3px}
