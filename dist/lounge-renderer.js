@@ -47,7 +47,12 @@ void main(){
  gl_FragColor=vec4(max(col,0.),1.);
  #include <colorspace_fragment>
 }`;
-const BAND_Z={far:6,mid:16,near:26},LAYER_Z={far:0,mid:10,near:20};
+// Bands sit far apart in z so a body turned into the scene never cuts through a photo layer.
+const BAND_Z={far:120,mid:320,near:520},LAYER_Z={far:0,mid:200,near:400},CUTOUT_Z=110;
+const X_AXIS=new T.Vector3(1,0,0),Y_AXIS=new T.Vector3(0,1,0);
+// Lying seats, per scene: how far the back is raised and how much the chest turns to the camera.
+const RECLINE={forest:.2,coastHammocks:.2,coastLounge:.42,coastPaddles:0},ROLL={forest:.5,coastHammocks:.5,coastLounge:.3,coastPaddles:.15};
+const DEBUG=new URLSearchParams(location.search).has('loungeDebug');
 const smoothstep=(a,b,x)=>{const t=T.MathUtils.clamp((x-a)/(b-a),0,1);return t*t*(3-2*t);};
 
 export function createLoungeRenderer(field,{audio=null,onOverlay=null}={}){
@@ -127,27 +132,57 @@ export function createLoungeRenderer(field,{audio=null,onOverlay=null}={}){
   const [x,y]=slot.pose==='lie'?[(slot.head[0]+slot.feet[0])/2,(slot.head[1]+slot.feet[1])/2]:slot.anchor;
   const v=depthSampler(x,y);return v>=meta.bands[0]?'near':v>=meta.bands[1]?'mid':'far';
  }
- // Standing placement at a seat: feet on the furniture's contact point, facing the camera a little.
- function standing(slot){
-  if(slot.pose==='lie'){const [hx,hy]=slot.head,[fx,fy]=slot.feet;const scale=Math.hypot(hx-fx,fy-hy)/1.16*slot.fit;return{x:fx,y:fy,scale,yaw:(hx<fx?.35:-.35)};}
-  return{x:slot.anchor[0],y:slot.anchor[1],scale:slot.scale,yaw:slot.yaw||0};
- }
- // Final placement: lying models are laid along the head→feet line, sitting models sit on the anchor.
- function placement(slot){
-  const {width,height}=description;
-  if(slot.pose==='lie'){
-   const [hx,hy]=slot.head,[fx,fy]=slot.feet,dx=hx-fx,dy=fy-hy;
-   const scale=Math.hypot(dx,dy)/1.16*slot.fit,angle=Math.atan2(dy,dx)-Math.PI/2;
-   const head=new T.Vector3(0,1.18,0).applyEuler(new T.Euler(0,0,angle)).multiplyScalar(scale);
-   return{position:new T.Vector3(hx-width/2-head.x,height/2-hy-head.y,0),quaternion:new T.Quaternion().setFromEuler(new T.Euler(0,0,angle)),scale,contact:{x:hx+(fx-hx)*slot.fit*.43-width/2,y:height/2-hy-(fy-hy)*slot.fit*.43-3,angle,sx:scale*.55,sy:scale*1.45}};
+ // ---- Seat geometry ---------------------------------------------------------------------
+ // Furniture faces every which way from photo to photo, so poses live in a ground frame
+ // (y = ground normal, -z = away from the camera) tilted by the photo's look-down angle.
+ // A lying seat is just its head and feet points in the photo: the body's true length and its
+ // heading into the scene are solved so the reclined, foreshortened body spans that line.
+ const elevation=()=>dressing.elevation??(Math.PI/2-(dressing.groundTilt??1.15));
+ const upright=yaw=>new T.Quaternion().setFromAxisAngle(X_AXIS,elevation()).multiply(new T.Quaternion().setFromAxisAngle(Y_AXIS,yaw));
+ function lieFrame(slot){
+  const e=elevation();if(slot._frame?.e===e&&slot._frame.profile===description.profile)return slot._frame;
+  const [hx,hy]=slot.head,[fx,fy]=slot.feet,sx=hx-fx,sy=fy-hy,p=Math.hypot(sx,sy),se=Math.max(.2,Math.sin(e)),ce=Math.cos(e);
+  let rho=slot.recline??RECLINE[description.profile]??.2,L=null;
+  for(let tries=0;tries<6&&L===null;tries++){
+   const c=Math.cos(rho),s=Math.sin(rho),f=len=>(sx/(len*c))**2+((sy/len-s*ce)/(c*se))**2-1;let lo=p*.5,hi=p*8;
+   if(f(lo)>0&&f(hi)<0){for(let i=0;i<48;i++){const m=(lo+hi)/2;if(f(m)>0)lo=m;else hi=m;}L=(lo+hi)/2;}else rho*=.5;
   }
-  return{position:new T.Vector3(slot.anchor[0]-width/2,height/2-slot.anchor[1]-.365*slot.scale,0),quaternion:new T.Quaternion().setFromEuler(new T.Euler(0,slot.yaw||0,0)),scale:slot.scale,contact:{x:slot.anchor[0]-width/2,y:height/2-slot.anchor[1]-3,angle:0,sx:slot.scale*.8,sy:slot.scale*.17}};
+  if(L===null){rho=0;L=Math.hypot(sx,sy/se);}
+  const c=Math.cos(rho),s=Math.sin(rho),ca=T.MathUtils.clamp(sx/(L*c),-1,1),sa=T.MathUtils.clamp((sy/L-s*ce)/(c*se),-1,1);
+  const d=new T.Vector3(c*ca,s,-c*sa).normalize(),n0=new T.Vector3(0,1,0).addScaledVector(d,-d.y).normalize();
+  // Roll the chest a little toward the camera, as people lie in a hammock or on a lounger.
+  const side=new T.Vector3().crossVectors(d,n0),roll=(slot.roll??ROLL[description.profile]??.4)*(Math.sign(side.dot(new T.Vector3(0,Math.sin(e),Math.cos(e))))||1);
+  const n=n0.clone().multiplyScalar(Math.cos(roll)).addScaledVector(side,Math.sin(roll)).normalize(),x=new T.Vector3().crossVectors(d,n);
+  const quaternion=new T.Quaternion().setFromAxisAngle(X_AXIS,e).multiply(new T.Quaternion().setFromRotationMatrix(new T.Matrix4().makeBasis(x,d,n)));
+  return slot._frame={e,profile:description.profile,quaternion,scale:L/1.16*slot.fit,recline:rho,heading:Math.atan2(sa,ca),projected:p};
+ }
+ const key=(x,y,scale,quaternion)=>({position:toWorld(x,y),scale,quaternion});
+ function finalKey(slot){
+  if(slot.pose==='lie'){const f=lieFrame(slot),head=new T.Vector3(0,1.18,0).applyQuaternion(f.quaternion).multiplyScalar(f.scale);return{position:toWorld(...slot.head).sub(head).setZ(0),quaternion:f.quaternion,scale:f.scale};}
+  return key(slot.anchor[0],slot.anchor[1]+.365*slot.scale,slot.scale,upright(slot.yaw||0));
+ }
+ // A lying seat is entered by sitting on its middle first, turned a little toward the feet end.
+ function perchKey(slot){
+  const f=lieFrame(slot),[hx,hy]=slot.head,[fx,fy]=slot.feet,mx=fx+(hx-fx)*.45,my=fy+(hy-fy)*.45;
+  return key(mx,my+.365*f.scale,f.scale,upright(Math.sign(fx-hx||1)*.4));
+ }
+ // Where the guest stops walking: just in front of a chair, or beside the middle of a bed/hammock.
+ function standKey(slot){
+  if(slot.stand)return key(slot.stand[0],slot.stand[1],slot.stand[2]??(slot.pose==='lie'?lieFrame(slot).scale:slot.scale),upright(slot.stand[3]??0));
+  const base=slot.pose==='lie'?perchKey(slot):finalKey(slot);
+  return{position:base.position.clone().add(new T.Vector3(0,-.16*base.scale,0)),scale:base.scale,quaternion:base.quaternion};
+ }
+ const keyYaw=k=>new T.Euler().setFromQuaternion(new T.Quaternion().setFromAxisAngle(X_AXIS,-elevation()).multiply(k.quaternion),'YXZ').y;
+ function contactFor(slot,scale){
+  const {width,height}=description;
+  if(slot.pose==='lie'){const [hx,hy]=slot.head,[fx,fy]=slot.feet,f=lieFrame(slot);return{x:hx+(fx-hx)*slot.fit*.43-width/2,y:height/2-hy-(fy-hy)*slot.fit*.43-3,angle:Math.atan2(fy-hy,hx-fx)-Math.PI/2,sx:f.scale*.55,sy:f.projected*slot.fit*1.25};}
+  return{x:slot.anchor[0]-width/2,y:height/2-slot.anchor[1]-3,angle:0,sx:scale*.8,sy:scale*.17};
  }
  function toWorld(x,y){return new T.Vector3(x-description.width/2,description.height/2-y,0);}
  function placeModel(model){
   const slot=model.slot,band=bandFor(slot);model.band=band;model.parallax=(meta?.parallax||[1,1,1])[band==='near'?0:band==='mid'?1:2];
   const within=slot.pose==='lie'?(slot.head[1]+slot.feet[1])/2:slot.anchor[1];
-  model.z=BAND_Z[band]+within/description.height*3;
+  model.z=BAND_Z[band]+within/description.height*40;
   // Hammock cloth in front of the body: a cut-out of the layer that holds the seat.
   if(model.cutout){model.group.remove(model.cutout);model.cutout.geometry.dispose();model.cutout.material.dispose();model.cutout=null;}
   if(slot.mask){
@@ -157,7 +192,7 @@ export function createLoungeRenderer(field,{audio=null,onOverlay=null}={}){
     ctx.fillStyle='#000';ctx.fillRect(0,0,c.width,c.height);ctx.fillStyle='#fff';ctx.beginPath();slot.mask.forEach(([x,y],i)=>ctx[i?'lineTo':'moveTo'](x/width*c.width,y/height*c.height));ctx.closePath();ctx.filter='blur(.6px)';ctx.fill();
     const alpha=new T.CanvasTexture(c);alpha.colorSpace=T.NoColorSpace;
     const material=new T.MeshBasicMaterial({map:layer.mesh.material.uniforms.map.value,alphaMap:alpha,transparent:true,depthWrite:false});
-    model.cutout=new T.Mesh(new T.PlaneGeometry(width,height),material);model.cutout.position.z=model.z+1.5;model.cutout.renderOrder=model.z+1.5;model.group.add(model.cutout);
+    model.cutout=new T.Mesh(new T.PlaneGeometry(width,height),material);model.cutout.position.z=model.z+CUTOUT_Z;model.cutout.renderOrder=model.z+CUTOUT_Z;model.group.add(model.cutout);
    }
   }
  }
@@ -171,34 +206,67 @@ export function createLoungeRenderer(field,{audio=null,onOverlay=null}={}){
   return model;
  }
  function entryPoint(){const e=dressing.entry||{x:description.width/2,y:description.height-10,scale:80};return e;}
- function setTransform(model,x,y,scale,yaw,z){
-  model.root.position.copy(toWorld(x,y));model.root.position.z=z;model.root.scale.setScalar(scale);model.root.quaternion.setFromEuler(new T.Euler(0,yaw,0));
-  model.contact.position.set(model.root.position.x,model.root.position.y-3,z-1);model.contact.rotation.z=0;model.contact.scale.set(scale*.8,scale*.17,1);
-  model.ground.position.set(model.root.position.x,model.root.position.y,z-.5);model.ground.rotation.set(-(dressing.groundTilt??1.15),0,0);model.ground.scale.setScalar(scale);
+ // Shadows under the feet while walking, standing or turning.
+ function footShadows(model,scale){
+  const z=model.z,p=model.root.position;
+  model.contact.position.set(p.x,p.y-3,z-1);model.contact.rotation.z=0;model.contact.scale.set(scale*.8,scale*.17,1);
+  model.ground.position.set(p.x,p.y,z-.5);model.ground.rotation.set(-(dressing.groundTilt??1.15),0,0);model.ground.scale.setScalar(scale);
  }
- function applyPlacement(model,blend){
-  const final=placement(model.slot),slot=model.slot,z=model.z;
-  if(blend<1){
-   const s=standing(slot),w=toWorld(s.x,s.y),q=new T.Quaternion().setFromEuler(new T.Euler(0,s.yaw,0)),u=smoothstep(0,1,blend);
-   model.root.position.lerpVectors(w,final.position,u);model.root.position.z=z;model.root.scale.setScalar(T.MathUtils.lerp(s.scale,final.scale,u));model.root.quaternion.slerpQuaternions(q,final.quaternion,u);
-  }else{model.root.position.copy(final.position);model.root.position.z=z;model.root.scale.setScalar(final.scale);model.root.quaternion.copy(final.quaternion);}
-  const c=final.contact;model.contact.position.set(c.x,c.y,z-1);model.contact.rotation.z=c.angle;model.contact.scale.set(c.sx,c.sy,1);
+ function setTransform(model,x,y,scale,yaw){
+  model.root.position.copy(toWorld(x,y));model.root.position.z=model.z;model.root.scale.setScalar(scale);model.root.quaternion.copy(upright(yaw));footShadows(model,scale);
+ }
+ function applyKey(model,k){model.root.position.set(k.position.x,k.position.y,model.z);model.root.scale.setScalar(k.scale);model.root.quaternion.copy(k.quaternion);}
+ function blendKeys(a,b,u){return{position:a.position.clone().lerp(b.position,u),scale:T.MathUtils.lerp(a.scale,b.scale,u),quaternion:a.quaternion.clone().slerp(b.quaternion,u)};}
+ // At rest: the final pose plus the contact shadow under the furniture.
+ function applyPlacement(model){
+  const final=finalKey(model.slot);applyKey(model,final);
+  const c=contactFor(model.slot,final.scale),z=model.z;model.contact.position.set(c.x,c.y,z-1);model.contact.rotation.z=c.angle;model.contact.scale.set(c.sx,c.sy,1);
   model.ground.position.set(c.x,c.y,z-.5);model.ground.rotation.set(-(dressing.groundTilt??1.15),0,0);model.ground.scale.setScalar(final.scale);
  }
+ // The furniture's contact shadow takes over from the foot shadow during the last settle step.
+ function blendShadows(model,u){
+  const final=finalKey(model.slot),c=contactFor(model.slot,final.scale),z=model.z,p=model.root.position,k=smoothstep(0,1,u),s=model.root.scale.x;
+  model.contact.position.set(T.MathUtils.lerp(p.x,c.x,k),T.MathUtils.lerp(p.y-3,c.y,k),z-1);model.contact.rotation.z=c.angle*k;model.contact.scale.set(T.MathUtils.lerp(s*.8,c.sx,k),T.MathUtils.lerp(s*.17,c.sy,k),1);
+  model.ground.position.set(T.MathUtils.lerp(p.x,c.x,k),T.MathUtils.lerp(p.y,c.y,k),z-.5);model.ground.rotation.set(-(dressing.groundTilt??1.15),0,0);model.ground.scale.setScalar(final.scale);
+ }
+ // Settling is a short chain of key poses, with the companion's pose driving the limbs:
+ // chair: stand -> sit. Hammock, lounger, board: stand -> perch on the middle -> lie back.
+ function settleSegments(slot){
+  const stand=standKey(slot),final=finalKey(slot);
+  if(slot.pose!=='lie')return[{from:stand,to:final,duration:650,pose:'sit'}];
+  const perch=perchKey(slot);return[{from:stand,to:perch,duration:600,pose:'sit'},{from:perch,to:final,duration:1000,pose:'lie'}];
+ }
+ // Walking route: entry -> optional approach waypoints (photo px) -> the stand point.
+ const routeOf=(slot,e)=>{const s=standKey(slot);return[[e.x,e.y],...(slot.approach||[]),[s.position.x+description.width/2,description.height/2-s.position.y]];};
+ function routeLength(points){let total=0;for(let i=1;i<points.length;i++)total+=Math.hypot(points[i][0]-points[i-1][0],points[i][1]-points[i-1][1]);return total;}
+ function alongRoute(points,u){
+  let left=u*routeLength(points);
+  for(let i=1;i<points.length;i++){const a=points[i-1],b=points[i],len=Math.hypot(b[0]-a[0],b[1]-a[1]);if(left<=len||i===points.length-1){const t=len?Math.min(1,left/len):1;return{x:a[0]+(b[0]-a[0])*t,y:a[1]+(b[1]-a[1])*t,yaw:Math.atan2(b[0]-a[0],b[1]-a[1])};}left-=len;}
+  return{x:points[0][0],y:points[0][1],yaw:0};
+ }
+ // Scale follows perspective: interpolate by depth (image y) when the route has any.
+ function routeScale(model,y,u){const a=model.from,b=model.to,span=b.y-a.y;return Math.abs(span)>description.height*.04?T.MathUtils.lerp(a.scale,b.scale,T.MathUtils.clamp((y-a.y)/span,0,1)):T.MathUtils.lerp(a.scale,b.scale,u);}
+ const walkTime=(route,a,b)=>Math.max(900,routeLength(route)/(1.25*(a+b)/2)*1000);
  function beginEnter(model,now,delay=0){
-  const s=standing(model.slot),e=entryPoint();
+  const e=entryPoint();
   if((dressing.entryMode||'walk')==='fade'){model.mode='fade';model.t0=now+delay;model.duration=700;return;}
-  const distance=Math.hypot(s.x-e.x,s.y-e.y);
-  model.mode='walk';model.t0=now+delay;model.from={x:e.x,y:e.y,scale:e.scale};model.to={x:s.x,y:s.y,scale:s.scale,yaw:s.yaw};model.duration=Math.max(900,distance/(1.25*(e.scale+s.scale)/2)*1000);model.yaw=Math.atan2(s.x-e.x,s.y-e.y);model.distance=0;model.lastXY=[e.x,e.y];
+  const s=standKey(model.slot),route=routeOf(model.slot,e),end=route[route.length-1];
+  model.mode='walk';model.t0=now+delay;model.route=route;model.from={x:e.x,y:e.y,scale:e.scale};model.to={x:end[0],y:end[1],scale:s.scale,yaw:keyYaw(s)};
+  model.duration=walkTime(route,e.scale,s.scale);model.yaw=alongRoute(route,0).yaw;model.distance=0;model.lastXY=[e.x,e.y];
  }
  function beginLeave(model,now){
-  const s=standing(model.slot),e=entryPoint();
+  const e=entryPoint();
   if((dressing.entryMode||'walk')==='fade'){model.mode='fadeOut';model.t0=now;model.duration=600;return;}
-  model.mode='unsettle';model.t0=now;model.duration=650;model.from={x:s.x,y:s.y,scale:s.scale};model.to={x:e.x,y:e.y,scale:e.scale};model.walkDuration=Math.max(900,Math.hypot(s.x-e.x,s.y-e.y)/(1.25*(e.scale+s.scale)/2)*1000);model.yaw=Math.atan2(e.x-s.x,e.y-s.y);model.distance=0;model.lastXY=[s.x,s.y];
+  const s=standKey(model.slot),route=routeOf(model.slot,e).reverse(),start=route[0];
+  model.segments=settleSegments(model.slot).reverse().map(seg=>({from:seg.to,to:seg.from,duration:seg.duration*.85,pose:seg.pose==='lie'?'sit':'walk'}));model.segment=0;
+  model.mode='unsettle';model.t0=now;model.route=route;model.from={x:start[0],y:start[1],scale:s.scale};model.to={x:e.x,y:e.y,scale:e.scale};
+  model.walkDuration=walkTime(route,s.scale,e.scale);model.distance=0;model.lastXY=[start[0],start[1]];
  }
  const surfaceFor=()=>description.profile==='forest'?'dirt':description.profile==='coastLounge'?'wood':'stone';
  const panFor=model=>(model.root.position.x/description.width)*1.4;
  function drainSteps(model){for(const event of model.companion.root.userData.events.splice(0))if(event.type==='footfall'&&audio)audio.footstep(surfaceFor(),{gain:.25+.4*event.strength,pan:panFor(model),rate:1.02+Math.random()*.1});}
+ const turnBy=(from,to)=>{let d=(to-from)%(Math.PI*2);if(d>Math.PI)d-=Math.PI*2;if(d<-Math.PI)d+=Math.PI*2;return d;};
+ const turnTime=(a,b)=>Math.max(250,Math.abs(turnBy(a,b))/Math.PI*900);
  function advance(model,now,dt,time){
   const slot=model.slot,profile=description.profile;
   const idleTime=time+description.seats.indexOf(slot)*.9;
@@ -206,44 +274,85 @@ export function createLoungeRenderer(field,{audio=null,onOverlay=null}={}){
    if(now<model.t0){model.root.visible=model.contact.visible=model.ground.visible=false;model.companion.update({dt,time:idleTime,pose:'walk',walking:false,profile});return false;}
    model.root.visible=model.contact.visible=model.ground.visible=true;
    const u=T.MathUtils.clamp((now-model.t0)/model.duration,0,1),e=u<.15?u/.15:u>.85?(1-u)/.15:1;
-   const x=T.MathUtils.lerp(model.from.x,model.to.x,u),y=T.MathUtils.lerp(model.from.y,model.to.y,u),scale=T.MathUtils.lerp(model.from.scale,model.to.scale,u);
-   const step=Math.hypot(x-model.lastXY[0],y-model.lastXY[1]);model.lastXY=[x,y];model.distance+=step/scale;
-   const yaw=u>.92&&model.mode==='walk'?T.MathUtils.lerp(model.yaw,model.to.yaw,(u-.92)/.08):model.yaw;
-   setTransform(model,x,y,scale,yaw,model.z);
+   const at=alongRoute(model.route,u),scale=routeScale(model,at.y,u);
+   const step=Math.hypot(at.x-model.lastXY[0],at.y-model.lastXY[1]);model.lastXY=[at.x,at.y];model.distance+=step/scale;
+   // The heading eases into each leg of the route instead of snapping at the corners.
+   model.yaw+=turnBy(model.yaw,at.yaw)*Math.min(1,dt*7);
+   setTransform(model,at.x,at.y,scale,model.yaw);
    model.companion.update({dt,time:idleTime,pose:'walk',walking:u<1,distance:model.distance,speed:dt>0?step/scale/dt*e:0,profile});drainSteps(model);
-   if(u>=1){if(model.mode==='walk'){model.mode='settle';model.t0=now;model.duration=slot.pose==='lie'?900:550;audio?.foley(slot.pose==='lie'?'hammock':'rustle',{pan:panFor(model)});}else return true;}
+   if(u>=1){if(model.mode==='walk'){model.mode='turn';model.t0=now;model.turnFrom=model.yaw;model.turnTo=model.to.yaw;model.duration=turnTime(model.yaw,model.to.yaw);}else return true;}
    return false;
   }
-  if(model.mode==='settle'){
-   const u=T.MathUtils.clamp((now-model.t0)/model.duration,0,1);
-   model.companion.update({dt,time:idleTime,pose:slot.pose,walking:false,profile});applyPlacement(model,u);
-   if(u>=1){model.mode='seated';model.nextCreak=now+6000+Math.random()*9000;}return false;
+  if(model.mode==='turn'||model.mode==='turnOut'){
+   // Turning on the spot with small steps, to put the back to the seat (or face the way out).
+   const u=T.MathUtils.clamp((now-model.t0)/model.duration,0,1),yaw=model.turnFrom+turnBy(model.turnFrom,model.turnTo)*smoothstep(0,1,u);
+   const p=model.mode==='turn'?model.to:model.from;setTransform(model,p.x,p.y,p.scale,yaw);model.yaw=yaw;
+   model.distance+=Math.abs(turnBy(model.turnFrom,model.turnTo))*dt/(model.duration/1000)*.25;
+   model.companion.update({dt,time:idleTime,pose:'walk',walking:u<1,distance:model.distance,speed:.35,profile});drainSteps(model);
+   if(u>=1){
+    if(model.mode==='turn'){model.mode='settle';model.segments=settleSegments(slot);model.segment=0;model.t0=now;audio?.foley(slot.pose==='lie'?'hammock':'rustle',{pan:panFor(model)});}
+    else{model.mode='walkOut';model.t0=now;model.duration=model.walkDuration;}
+   }
+   return false;
   }
-  if(model.mode==='unsettle'){
-   const u=T.MathUtils.clamp((now-model.t0)/model.duration,0,1);if(!model.rustled){model.rustled=true;audio?.foley('rustle',{pan:panFor(model),gain:.8});}
-   model.companion.update({dt,time:idleTime,pose:'walk',walking:false,profile});applyPlacement(model,1-u);
-   if(u>=1){model.mode='walkOut';model.t0=now;model.duration=model.walkDuration;}return false;
+  if(model.mode==='settle'||model.mode==='unsettle'){
+   const seg=model.segments[model.segment],u=T.MathUtils.clamp((now-model.t0)/seg.duration,0,1);
+   if(model.mode==='unsettle'&&!model.rustled){model.rustled=true;audio?.foley('rustle',{pan:panFor(model),gain:.8});}
+   model.companion.update({dt,time:idleTime,pose:seg.pose,walking:false,profile});
+   applyKey(model,blendKeys(seg.from,seg.to,smoothstep(0,1,u)));
+   const last=model.segments.length-1;
+   if(model.mode==='settle'&&model.segment===last)blendShadows(model,u);else if(model.mode==='unsettle'&&model.segment===0)blendShadows(model,1-u);else footShadows(model,model.root.scale.x);
+   if(u>=1){
+    model.segment++;model.t0=now;
+    if(model.segment>last){
+     if(model.mode==='settle'){model.mode='seated';model.nextCreak=now+6000+Math.random()*9000;}
+     else{model.mode='turnOut';model.turnFrom=keyYaw(standKey(slot));model.turnTo=alongRoute(model.route,0).yaw;model.duration=turnTime(model.turnFrom,model.turnTo);model.yaw=model.turnFrom;}
+    }
+   }
+   return false;
   }
   if(model.mode==='fade'||model.mode==='fadeOut'){
    const u=T.MathUtils.clamp((now-model.t0)/model.duration,0,1),k=model.mode==='fade'?u:1-u,pop=k<1?1-Math.pow(1-k,3):1;
-   model.companion.update({dt,time:idleTime,pose:slot.pose,walking:false,profile});applyPlacement(model,1);
+   model.companion.update({dt,time:idleTime,pose:slot.pose,walking:false,profile});applyPlacement(model);
    model.root.visible=model.contact.visible=model.ground.visible=k>.02;model.root.scale.multiplyScalar(Math.max(.01,pop));model.root.position.y+=(1-pop)*model.root.scale.x*.6;
    if(u>=1){if(model.mode==='fade'){model.mode='seated';model.nextCreak=now+6000+Math.random()*9000;audio?.foley('splash',{pan:panFor(model),gain:.7});}else return true;}return false;
   }
-  model.companion.update({dt,time:idleTime,pose:slot.pose,walking:false,profile});applyPlacement(model,1);model.companion.root.userData.events.length=0;
+  model.companion.update({dt,time:idleTime,pose:slot.pose,walking:false,profile});applyPlacement(model);model.companion.root.userData.events.length=0;
   if(slot.pose==='lie'&&model.nextCreak&&now>model.nextCreak&&description.profile!=='coastPaddles'){model.nextCreak=now+9000+Math.random()*12000;audio?.foley('creak',{pan:panFor(model),gain:.6});}
   return false;
+ }
+ // Seat review (?loungeDebug=1): every seat's geometry drawn over the photo, camera drift off.
+ // red = head, blue = feet, green = chair anchor, yellow = stand point, dashed = walking route.
+ let debugSvg=null,debugAt=0;
+ function drawDebug(){
+  if(!description)return;const r=field.getBoundingClientRect(),ns='http://www.w3.org/2000/svg';
+  if(!debugSvg){debugSvg=document.createElementNS(ns,'svg');debugSvg.setAttribute('class','lounge-debug');debugSvg.style.cssText='position:absolute;inset:0;width:100%;height:100%;z-index:6;pointer-events:none;overflow:visible';field.append(debugSvg);}
+  debugSvg.setAttribute('viewBox',`0 0 ${r.width} ${r.height}`);
+  const at=(x,y)=>{const v=new T.Vector3(x-description.width/2,description.height/2-y,0).project(camera);return[(v.x+1)/2*r.width,(1-v.y)/2*r.height];};
+  const dot=(x,y,c,l='')=>{const[a,b]=at(x,y);return`<circle cx="${a}" cy="${b}" r="4" fill="${c}" stroke="#000" stroke-width="1"/>${l?`<text x="${a+6}" y="${b-6}" fill="#fff" font-size="11" stroke="#000" stroke-width="2.5" paint-order="stroke">${l}</text>`:''}`;};
+  const path=pts=>`<polyline points="${pts.map(p=>at(...p).join(',')).join(' ')}" fill="none" stroke="#ffe066" stroke-width="1.5" stroke-dasharray="5 4"/>`;
+  const e=entryPoint();let svg=dot(e.x,e.y,'#fff','입구');
+  for(const slot of description.seats){
+   const s=standKey(slot),stand=[s.position.x+description.width/2,description.height/2-s.position.y];
+   if((dressing.entryMode||'walk')!=='fade')svg+=path(routeOf(slot,e));
+   svg+=dot(...stand,'#ffe066');
+   if(slot.pose==='lie'){const f=lieFrame(slot),[a,b]=at(...slot.head),[c,d]=at(...slot.feet);svg+=`<line x1="${a}" y1="${b}" x2="${c}" y2="${d}" stroke="#fff" stroke-width="2"/>`+dot(...slot.head,'#ff5a5a',`${slot.id} ${slot.name} · 깊이 ${Math.round(f.heading*57.3)}° · 등 ${Math.round(f.recline*57.3)}°`)+dot(...slot.feet,'#5aa0ff');}
+   else svg+=dot(...slot.anchor,'#5aff8a',`${slot.id} ${slot.name} · 방향 ${Math.round((slot.yaw||0)*57.3)}°`);
+  }
+  debugSvg.innerHTML=svg;
+  window.__lounge={elevation:elevation()*57.3,models:[...models.values()].map(m=>({seat:m.slot.id,mode:m.mode,segment:m.segment,pose:m.slot.pose,scale:Math.round(m.root.scale.x),z:Math.round(m.z)}))};
  }
  function tick(now){
   if(!active)return;const dt=Math.min(.05,(now-last)/1000);last=now;const time=now/1000;
   if(sceneReady&&description){
-   const {width}=description,A=(dressing.drift??.006)*width;
+   const {width}=description,A=DEBUG?0:(dressing.drift??.006)*width;
    const dx=Math.sin(time*2*Math.PI/27)*A,dy=Math.cos(time*2*Math.PI/41)*A*.6,zoom=1+(dressing.zoom??.012)*(.5+.5*Math.sin(time*2*Math.PI/53));
    camera.position.x=dx;camera.position.y=dy;camera.zoom=zoom;camera.updateProjectionMatrix();
    for(const l of layers){l.mesh.material.uniforms.time.value=time;l.mesh.position.x=dx*(1-l.parallax);l.mesh.position.y=dy*(1-l.parallax);const s=1+(zoom-1)*(l.parallax-1);l.mesh.scale.set(s,s,1);}
    for(const model of models.values()){advance(model,now,dt,time);const p=model.parallax??1,s=1+(zoom-1)*(p-1);model.group.position.set(dx*(1-p),dy*(1-p),0);model.group.scale.set(s,s,1);}
    for(let i=leaving.length-1;i>=0;i--){const model=leaving[i];if(advance(model,now,dt,time)){disposeModel(model);leaving.splice(i,1);}else{const p=model.parallax??1,s=1+(zoom-1)*(p-1);model.group.position.set(dx*(1-p),dy*(1-p),0);model.group.scale.set(s,s,1);}}
-   if(onOverlay){const positions=new Map(),v=new T.Vector3();for(const[id,model]of models){if(!model.root.visible){positions.set(id,{x:0,y:0,scale:1,visible:false});continue;}const lift=model.slot.pose==='lie'&&model.mode==='seated'?.75:1.32;v.copy(model.root.position);v.y+=model.root.scale.x*lift;v.multiply(model.group.scale).add(model.group.position);v.project(camera);positions.set(id,{x:(v.x+1)*50,y:(1-v.y)*50,scale:T.MathUtils.clamp(.55+model.root.scale.x/150,.85,1.15),visible:true});}onOverlay(positions);}
+   if(onOverlay){const positions=new Map(),v=new T.Vector3();for(const[id,model]of models){if(!model.root.visible){positions.set(id,{x:0,y:0,scale:1,visible:false});continue;}if(model.slot.pose==='lie'&&model.mode==='seated'){v.copy(toWorld(...model.slot.head));v.y+=model.root.scale.x*.42;}else{v.copy(model.root.position);v.y+=model.root.scale.x*1.32;}v.multiply(model.group.scale).add(model.group.position);v.project(camera);positions.set(id,{x:(v.x+1)*50,y:(1-v.y)*50,scale:T.MathUtils.clamp(.55+model.root.scale.x/150,.85,1.15),visible:true});}onOverlay(positions);}
+   if(DEBUG&&now-(debugAt||0)>400){debugAt=now;drawDebug();}
    post.uniforms.time.value=time;
    renderer.setRenderTarget(target);renderer.setClearColor(0,0);renderer.clear();renderer.render(world,camera);renderer.setRenderTarget(null);renderer.render(postScene,postCamera);
   }
@@ -264,7 +373,7 @@ export function createLoungeRenderer(field,{audio=null,onOverlay=null}={}){
     if(!model){
      const arriving=!this.fresh||guest.uid===self||stagger;
      model=createModel(slot,guest,arriving?'walk':'seat');models.set(slot.id,model);
-     if(arriving)beginEnter(model,now,stagger?order++*700:0);else applyPlacement(model,1);
+     if(arriving)beginEnter(model,now,stagger?order++*700:0);else applyPlacement(model);
     }else if(model.companion.root.userData.character!==characterFor(guest.character).id)model.companion.setCharacter(guest.character);
     model.guest=guest;
    }

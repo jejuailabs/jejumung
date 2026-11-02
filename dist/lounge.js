@@ -1,5 +1,5 @@
-import {parseRoom,roomId,sceneFor,KINDS} from './lounge-scenes.js';
-import {createLoungeRenderer} from './lounge-renderer.js?v=ui-9';
+import {parseRoom,roomId,sceneFor,KINDS} from './lounge-scenes.js?v=rest-2';
+import {createLoungeRenderer} from './lounge-renderer.js?v=rest-2';
 import {CHARACTERS,characterFor,mountCharacterPicker} from './characters.js';
 
 export function createLounge(host,{onReturn,onCharacter,audio=null}){

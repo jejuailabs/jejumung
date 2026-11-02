@@ -26,5 +26,5 @@ export function sceneFor(room){
   seats=[lie('앞쪽 선베드',[370,235],[450,261],[.66,.83]),lie('가운데 선베드',[270,208],[328,231],[.45,.73]),lie('안쪽 선베드',[207,189],[250,210],[.34,.62]),lie('오른쪽 데이베드',[529,285],[474,298],[.82,.94]),sit('바다 벤치',[511,222],26,[.83,.72],-.15)];
  }
  const source=room.area==='forest'?REST_SCENES.forest:room.kind==='hammock'?REST_SCENES.coastHammocks:room.kind==='paddle'?REST_SCENES.coastPaddles:REST_SCENES.coastLounge;
- return{background:image,width,height,layers:source.layers,dressing:source.dressing,profile:room.area==='forest'?'forest':room.kind==='hammock'?'coastHammocks':room.kind==='paddle'?'coastPaddles':'coastLounge',title:`${title} · ${String(room.index).padStart(2,'0')}구역`,seats:seats.map((s,i)=>({...s,fit:room.area==='forest'?.84:room.kind==='hammock'?.72:room.kind==='paddle'?.80:.66,id:'s'+String(i).padStart(2,'0'),x:s.button[0]*100,y:s.button[1]*100}))};
+ return{background:image,width,height,layers:source.layers,dressing:source.dressing,profile:room.area==='forest'?'forest':room.kind==='hammock'?'coastHammocks':room.kind==='paddle'?'coastPaddles':'coastLounge',title:`${title} · ${String(room.index).padStart(2,'0')}구역`,seats:seats.map((s,i)=>({...s,fit:room.area==='forest'?.84:room.kind==='hammock'?.72:room.kind==='paddle'?.56:.66,id:'s'+String(i).padStart(2,'0'),x:s.button[0]*100,y:s.button[1]*100}))};
 }
