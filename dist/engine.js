@@ -267,7 +267,7 @@ function render(now){
   $('stage').dataset.poseReady=String(resting&&avatar.root.userData.poseSettled&&!restTransition);
   $('stage').dataset.travelerFrame=String(avatar.root.userData.frame);
   $('stage').dataset.travelerClip=avatar.root.userData.clip;
-  $('renderStatus').textContent=!avatar.ready?'친구 준비 중…':!resting&&!inFrame?'바다를 바라보는 구간 · 여행자는 시야 밖':`${characterFor(selectedCharacter).name} · ${resting?'잠깐 쉬어가기':moving?'여유롭게 걷기':'멈춰서 멍때리기'}`;
+  $('renderStatus').textContent=!avatar.ready?'친구 준비 중…':!resting&&!inFrame?'잠시 주변을 둘러보는 구간 · 여행자는 시야 밖':`${characterFor(selectedCharacter).name} · ${resting?'잠깐 쉬어가기':moving?'여유롭게 걷기':'멈춰서 멍때리기'}`;
  }
  const duration=Number.isFinite(video.duration)?video.duration:activeClip.duration;
  const displayTime=recoveryPosition??video.currentTime;
