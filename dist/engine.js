@@ -18,6 +18,8 @@ const isCoast=activeClip.id==='IMG_0575';
 // Clips marked `slow` were re-timed to 0.72x offline (every frame real, audio tempo matched),
 // so they play at 1x. Older clips still slow down in the browser.
 const WALK_RATE=.72,BASE_RATE=activeClip.slow?1:WALK_RATE;
+// Share of the decoded frame that is colour; the rest is the occlusion depth strip (1 = none).
+const STACK=activeClip.stack||1;
 video.defaultPlaybackRate=BASE_RATE;video.playbackRate=BASE_RATE;video.preservesPitch=true;
 let selectedCharacter='stone';try{selectedCharacter=characterFor(localStorage.getItem('jejumong-character')).id;}catch{}
 const restEntryLabel=isCoast?'바다로 쉬러 가기':'숲으로 쉬러 가기';
@@ -111,16 +113,20 @@ function createLightProbe(){
 }
 // Final composite: footage + character layer. The layer is softened to the footage's sharpness,
 // scene colour wraps into its edges, and grain, vignette and a light grade are shared by both.
+// Courses with a depth strip (clips.js `stack`: colour share of the frame height) carry a
+// monocular depth map under the colour in the same stream; anything nearer than the ground
+// under the companion's feet (railings, grass, branches) is drawn over the companion.
 function createComposite(look){
  const size=new THREE.Vector2();renderer.getDrawingBufferSize(size);
  const target=new THREE.WebGLRenderTarget(Math.max(2,size.x),Math.max(2,size.y),{samples:4,depthBuffer:true});
- const material=new THREE.ShaderMaterial({depthTest:false,depthWrite:false,uniforms:{video:{value:videoTexture},layer:{value:target.texture},resolution:{value:new THREE.Vector2(size.x,size.y)},time:{value:0},softness:{value:look.softness??.8},grain:{value:look.grain??.035},vignette:{value:look.vignette??.22},contrast:{value:look.contrast??1.03},saturation:{value:look.saturation??1.04},lift:{value:look.lift??0},wrap:{value:look.wrap??.5},sharpen:{value:look.sharpen??.55},fit:{value:new THREE.Vector4(1,1,0,0)},showLayer:{value:1}},
+ const material=new THREE.ShaderMaterial({depthTest:false,depthWrite:false,uniforms:{video:{value:videoTexture},layer:{value:target.texture},resolution:{value:new THREE.Vector2(size.x,size.y)},time:{value:0},softness:{value:look.softness??.8},grain:{value:look.grain??.035},vignette:{value:look.vignette??.22},contrast:{value:look.contrast??1.03},saturation:{value:look.saturation??1.04},lift:{value:look.lift??0},wrap:{value:look.wrap??.5},sharpen:{value:look.sharpen??.55},fit:{value:new THREE.Vector4(1,1,0,0)},showLayer:{value:1},stack:{value:STACK},depthOn:{value:STACK<1?1:0},foot:{value:new THREE.Vector2(.5,.13)},margin:{value:look.depthMargin??.07}},
   vertexShader:'varying vec2 vUv;void main(){vUv=uv;gl_Position=vec4(position.xy,0.,1.);}',
-  fragmentShader:`precision highp float;uniform sampler2D video,layer;uniform vec2 resolution;uniform float time,softness,grain,vignette,contrast,saturation,lift,wrap,showLayer,sharpen;uniform vec4 fit;varying vec2 vUv;
+  fragmentShader:`precision highp float;uniform sampler2D video,layer;uniform vec2 resolution;uniform float time,softness,grain,vignette,contrast,saturation,lift,wrap,showLayer,sharpen,stack,depthOn,margin;uniform vec4 fit;uniform vec2 foot;varying vec2 vUv;
   float hash(vec2 p){return fract(sin(dot(p,vec2(12.9898,78.233)))*43758.5453);}
   // three.js uploads video textures without hardware sRGB decoding, so decode here before mixing in linear light.
   vec3 srgbToLinear(vec3 c){return mix(pow((c+.055)/1.055,vec3(2.4)),c/12.92,vec3(lessThanEqual(c,vec3(.04045))));}
-  vec3 videoAt(vec2 p){return srgbToLinear(texture2D(video,clamp(p,0.,1.)).rgb);}
+  vec3 videoAt(vec2 p){p=clamp(p,0.,1.);return srgbToLinear(texture2D(video,vec2(p.x,1.-stack+p.y*stack)).rgb);}
+  float depthAt(vec2 p){p=clamp(p,.002,.998);return texture2D(video,vec2(p.x,p.y*(1.-stack))).r;}
   void main(){
    vec2 uv=vUv,px=1./resolution,vuv=clamp(uv*fit.xy+fit.zw,0.,1.);
    vec3 bg=videoAt(vuv);
@@ -131,6 +137,12 @@ function createComposite(look){
    vec2 s=px*softness;
    vec4 fg=texture2D(layer,uv)*.36+(texture2D(layer,uv+vec2(s.x,0.))+texture2D(layer,uv-vec2(s.x,0.))+texture2D(layer,uv+vec2(0.,s.y))+texture2D(layer,uv-vec2(0.,s.y)))*.16;
    fg*=showLayer;
+   if(depthOn>.5&&fg.a>.001){
+    // Ground depth at the feet (a few taps, nearest wins), then hide the companion where the scene is nearer.
+    float df=max(max(depthAt(foot),depthAt(foot+vec2(.012,0.))),depthAt(foot-vec2(.012,0.)));
+    float occ=smoothstep(df+margin,df+margin+.06,depthAt(vuv));
+    fg*=1.-occ;
+   }
    vec2 w=px*3.*fit.xy;
    vec3 bgBlur=(videoAt(vuv+vec2(w.x,0.))+videoAt(vuv-vec2(w.x,0.))+videoAt(vuv+vec2(0.,w.y))+videoAt(vuv-vec2(0.,w.y)))*.25;
    float edge=clamp(fg.a*(1.-fg.a)*4.,0.,1.);
@@ -146,9 +158,10 @@ function createComposite(look){
  const postScene=new THREE.Scene();postScene.add(new THREE.Mesh(new THREE.PlaneGeometry(2,2),material));const postCamera=new THREE.OrthographicCamera(-1,1,1,-1,0,1);
  return{
   resize(){renderer.getDrawingBufferSize(size);target.setSize(Math.max(2,size.x),Math.max(2,size.y));material.uniforms.resolution.value.set(size.x,size.y);
-   const vw=video.videoWidth||16,vh=video.videoHeight||9,canvasAspect=size.x/size.y,videoAspect=vw/vh,f=material.uniforms.fit.value;
+   const vw=video.videoWidth||16,vh=(video.videoHeight||9)*STACK,canvasAspect=size.x/size.y,videoAspect=vw/vh,f=material.uniforms.fit.value;
    if(canvasAspect>videoAspect)f.set(1,videoAspect/canvasAspect,0,(1-videoAspect/canvasAspect)/2);else f.set(canvasAspect/videoAspect,1,(1-canvasAspect/videoAspect)/2,0);},
   get fit(){return material.uniforms.fit.value;},
+  setFoot(x,y){material.uniforms.foot.value.set(x,1-y);},
   render(now,layerVisible){material.uniforms.time.value=now/1000;material.uniforms.showLayer.value=layerVisible?1:0;
    renderer.setRenderTarget(target);renderer.setClearColor(0,0);renderer.clear();renderer.render(scene,camera);renderer.setRenderTarget(null);renderer.render(postScene,postCamera);}
  };
@@ -198,7 +211,7 @@ function render(now){
    camera.position.set(0,1.5,-t*.65);camera.rotation.set((horizon-.5)*.9,0,0);camera.updateMatrixWorld();
    // Path points are normalised to the video frame; the canvas may crop it (portrait phones).
    const fit=composite?composite.fit:null,vx=center+lane*(path?path.laneWidth:.065),vy=path?path.y:.865;
-   const cx=fit?(vx-fit.z)/fit.x:vx,cy=fit?(vy-fit.w)/fit.y:vy;
+   const cx=fit?(vx-fit.z)/fit.x:vx,cy=fit?(vy-fit.w)/fit.y:vy;composite?.setFoot(vx,vy);
    projection.set(cx*2-1,1-cy*2);ray.setFromCamera(projection,camera);ray.ray.intersectPlane(ground,foot);
    character.position.copy(foot);character.scale.setScalar(characterScale);character.rotation.set(0,Math.PI+(path?THREE.MathUtils.clamp((center-.5)*1.3,-.42,.42):0)+lane*.12,0);
    // Contact shadow under the feet; the sun casts the real one onto the ground plane.
@@ -411,7 +424,7 @@ let loungePreloaded=false;function preloadLounge(){if(loungePreloaded)return;lou
  audio.load(`/lab/audio/${isCoast?'coast':'forest'}.m4a`).catch(()=>{});}
 // Read-only inspection hook for local verification (foot planting, speed, lighting).
 window.__jejumong={
- get audio(){return audio.debug();},get bgm(){return bgm.debug();},
+ get audio(){return audio.debug();},get bgm(){return bgm.debug();},get composite(){return composite;},
  get audioApi(){return audio;},
  get state(){const t=video.currentTime,path=samplePath(t);return{clip:activeClip.id,time:t,rate:video.playbackRate,slow:Boolean(activeClip.slow),refinedPath:Boolean(pathTrack30),path,distance:walkDistance,speed:walkSpeed,gait:avatar?.root.userData.gait,phase:avatar?.root.userData.phase,feet:avatar?.root.userData.feet,sunIntensity:sun?.intensity,hemiIntensity:hemi?.intensity};},
  ankleScreen(side){if(!character||!renderer)return null;character.updateMatrixWorld(true);const ankle=character.getObjectByName(side==='left'?'left-hip':'right-hip').getObjectByName('knee').getObjectByName('ankle'),v=new THREE.Vector3();ankle.getWorldPosition(v);v.project(camera);return{x:(v.x+1)/2,y:(1-v.y)/2,world:ankle.getWorldPosition(new THREE.Vector3()).toArray()};}
