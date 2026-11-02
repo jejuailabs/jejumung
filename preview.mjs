@@ -2,12 +2,14 @@ import {createServer} from 'node:http';
 import {readFile,stat} from 'node:fs/promises';
 import {resolve,extname,sep} from 'node:path';
 import {fileURLToPath} from 'node:url';
-const root=fileURLToPath(new URL('./dist/',import.meta.url));
+const root=fileURLToPath(new URL('./dist/',import.meta.url)),mediaRoot=fileURLToPath(new URL('../jejumung-media/',import.meta.url));
 const types={'.html':'text/html; charset=utf-8','.js':'text/javascript','.css':'text/css','.json':'application/json','.m3u8':'application/vnd.apple.mpegurl','.ts':'video/mp2t','.jpg':'image/jpeg','.png':'image/png','.webp':'image/webp','.m4a':'audio/mp4','.mp3':'audio/mpeg','.svg':'image/svg+xml'};
 createServer(async(req,res)=>{try{
  const pathname=decodeURIComponent(new URL(req.url,'http://localhost').pathname);
- let path=resolve(root,'.'+pathname);
- if(path!==resolve(root)&&!path.startsWith(resolve(root)+sep))throw Error('outside root');
+ // Walk video lives in the sibling media project (clips.js mediaUrl keeps it same-origin locally).
+ const base=pathname.startsWith('/walk/')?mediaRoot:root;
+ let path=resolve(base,'.'+pathname);
+ if(path!==resolve(base)&&!path.startsWith(resolve(base)+sep))throw Error('outside root');
  if(pathname.endsWith('/'))path=resolve(path,'index.html');
  else if(!extname(path))path+='.html';
  const info=await stat(path);if(!info.isFile())throw Error('not file');

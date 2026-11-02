@@ -10,3 +10,10 @@ node_modules/
 *serviceAccount*.json
 credentials*.json
 secrets/
+
+# Walk video is deployed from the separate media project (../jejumung-media), never committed.
+*.m3u8
+dist/**/*.ts
+*.mp4
+*.mov
+*.MOV

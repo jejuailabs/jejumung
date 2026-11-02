@@ -1,7 +1,7 @@
 import { createLounge } from './lounge.js?v=rest-3';
 import { attachMedia } from './media-player.js';
 import * as THREE from './vendor/three.module.js';
-import { CLIPS } from './clips.js';
+import { CLIPS, mediaUrl } from './clips.js';
 import { REST_SCENES, COAST_REST_IDS } from './rest-scenes.js';
 import {createCompanion,preloadCompanionAssets} from './companion.js?v=nature-8';
 import {characterFor,characterIcon,mountCharacterPicker} from './characters.js';
@@ -30,7 +30,7 @@ if(activeClip.path){try{const response=await fetch(activeClip.path);if(!response
 let pathTrack30=null;
 if(activeClip.path30){try{const response=await fetch(activeClip.path30);if(!response.ok)throw Error('30fps 경로 없음');pathTrack30=await response.json();if(!Array.isArray(pathTrack30.samples)||pathTrack30.samples.length<2||!pathTrack30.units)throw Error('잘못된 30fps 경로');}catch(error){pathTrack30=null;console.warn('30fps 경로를 불러오지 못해 앵커 경로로 표시합니다.',error);}}
 const supportsCharacter=Boolean(activeClip.calibrated&&(pathTrack30||!activeClip.path||pathTrack));
-const media=attachMedia(video,activeClip.src,message=>{mediaFailed=true;showMediaNotice(message);});video.poster=activeClip.poster;$('timeline').max=activeClip.duration;$('readout').textContent=`0.00 / ${activeClip.duration.toFixed(2)}초`;
+const media=attachMedia(video,mediaUrl(activeClip.src),message=>{mediaFailed=true;showMediaNotice(message);});video.poster=activeClip.poster;$('timeline').max=activeClip.duration;$('readout').textContent=`0.00 / ${activeClip.duration.toFixed(2)}초`;
 $('stage').style.backgroundImage=`url("${activeClip.poster}")`;
 $('stage').style.backgroundSize='cover';
 $('sceneLabel').textContent=`${activeClip.file} · ${activeClip.title}`;
