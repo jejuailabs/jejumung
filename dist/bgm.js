@@ -24,7 +24,7 @@ export function createBgm(audio){
  <button type="button" class="bgm-btn" data-act="prev" aria-label="이전 곡">${ICON.prev}</button><button type="button" class="bgm-btn bgm-toggle" data-act="toggle" aria-label="재생">${ICON.play}</button><button type="button" class="bgm-btn" data-act="next" aria-label="다음 곡">${ICON.next}</button><button type="button" class="bgm-btn" data-act="list" aria-label="음악 목록" aria-expanded="false">${ICON.list}</button><button type="button" class="bgm-btn" data-act="close" aria-label="음악 끄고 닫기">${ICON.close}</button></div>`;
  document.body.append(dock);
  const $=s=>dock.querySelector(s),list=$('.bgm-list'),level=$('.bgm-list input');
- level.value=String(saved.level??audio.musicLevel);audio.setMusicLevel(Number(level.value));
+ level.value=String(saved.level&&saved.level!==.55?saved.level:audio.musicLevel);audio.setMusicLevel(Number(level.value));
  const listeners=new Set();
  function save(extra={}){try{localStorage.setItem(KEY,JSON.stringify({on,playing:!el.paused,i:index,t:el.currentTime||0,level:Number(level.value),...extra}));}catch{}}
  function paint(){
@@ -48,6 +48,8 @@ export function createBgm(audio){
  }
  async function play(i=index,at=0){
   await ready();if(!tracks.length)return;
+  // Asking for music is asking for sound: a muted app would otherwise show a playing, silent player.
+  if(!audio.enabled)audio.setEnabled(true);
   index=(i+tracks.length)%tracks.length;audio.unlock();audio.attachMusic(el);
   const src=new URL(tracks[index].file,location.href).href;
   if(el.src!==src){el.src=src;if(at)el.addEventListener('loadedmetadata',()=>{el.currentTime=Math.min(at,(el.duration||at+1)-1);},{once:true});}

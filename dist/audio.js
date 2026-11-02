@@ -4,7 +4,7 @@
 // (bgm.js) plays through its own bus. No external services.
 export function createAudio(){
  let ctx=null,master,compressor,analyser,buses={},noiseBuffer,elementSource=null,elementGain=null,videoElement=null,fallbackVolume=1;
- let enabled=true,volume=.8,steps=true,musicLevel=.55,music=null,ambience=null,lapTimer=null,ready=null;
+ let enabled=true,volume=.8,steps=true,musicLevel=.85,music=null,ambience=null,lapTimer=null,ready=null;
  try{enabled=localStorage.getItem('jejumong-sound')!=='off';steps=localStorage.getItem('jejumong-steps')!=='off';volume=Math.min(1,Math.max(0,parseFloat(localStorage.getItem('jejumong-volume')??'.8')));}catch{}
  const buffers=new Map(),listeners=new Set();
  const notify=()=>listeners.forEach(fn=>fn({enabled,volume,steps}));
