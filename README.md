@@ -41,7 +41,7 @@
 
 ## 소스와 배포
 
-GitHub: `jejuailabs/jejumung`, production branch `main`. Vercel: `jejuai/jejumung`, 공개 주소 https://jejumung.vercel.app . `main`에 푸시하면 자동 Production 배포됩니다.
+GitHub: `jejuailabs/jejumung`, production branch `main`. Vercel: 2026-11-02에 Hobby 팀 `jejuai`에서 Pro 팀 `funjeju's projects`(funjejus-projects)로 프로젝트를 이전했습니다. 공개 주소 https://jejumung.vercel.app 는 그대로이며 `main`에 푸시하면 자동 Production 배포됩니다. Pro는 월 전송량 1TB가 포함되고 초과분은 GB당 약 0.15달러입니다. 이전에 임시로 Owner 권한을 준 계정은 이전 뒤 팀에서 빼야 좌석 요금이 붙지 않습니다.
 
 정식 로컬 checkout은 `C:/Users/na/Desktop/vibeproject/jejumong/deploy/jejumung`입니다. Framework Other, Root `./`, Build `npm run build`, Output `dist`, Install 비움. `vercel.json`에 설정되어 있습니다. `npm start`는 127.0.0.1:4176에서 로컬 체험을 엽니다.
 
@@ -51,7 +51,7 @@ GitHub: `jejuailabs/jejumung`, production branch `main`. Vercel: `jejuai/jejumun
 
 사용자가 승인한 **결제 미연결 Spark `projecthub-97b64`**의 제주멍 웹 앱, 익명 Auth, Singapore RTDB를 사용합니다. 현재 데이터는 `jejumungV6/rooms`입니다. 이전 탭이 마무리될 수 있도록 V5 규칙과 데이터는 보존합니다. 기존 다른 호스팅·데이터는 변경하지 않습니다. `kakaobot-6fea2`는 기존 무료 Analytics 초기화만 유지하며 DB를 추가하지 않습니다.
 
-무료 RTDB 전체 한도는 동시 연결 100개·저장 1GB·월 다운로드 10GB입니다. 구역을 늘려도 전체 연결 한도는 늘지 않으며 한도 초과 시 제한됩니다. 결제 계정, 종량제 초과 사용, 자동 유료 전환, Identity Platform 업그레이드, 유료 API를 연결하지 않습니다. Vercel도 기존 Hobby 범위를 유지합니다. 상업 운영과 무료 한도를 넘는 확장은 별도 검토와 사용자 승인이 필요합니다.
+무료 RTDB 전체 한도는 동시 연결 100개·저장 1GB·월 다운로드 10GB입니다. 구역을 늘려도 전체 연결 한도는 늘지 않으며 한도 초과 시 제한됩니다. 결제 계정, 종량제 초과 사용, 자동 유료 전환, Identity Platform 업그레이드, 유료 API를 연결하지 않습니다. Vercel은 Pro 팀(funjeju's projects)의 포함 전송량 안에서 운영하며, 영상 전송량이 커지면 비트레이트를 낮추거나 영상만 별도 CDN으로 옮기는 것을 검토합니다. 상업 운영과 무료 한도를 넘는 확장은 별도 검토와 사용자 승인이 필요합니다.
 
 관리자 키와 원본 MOV는 배포하지 않습니다. 공개 웹 설정만 브라우저에 포함됩니다. Firebase SDK는 공식 CDN 13.1.0에 고정되어 있습니다.
 
