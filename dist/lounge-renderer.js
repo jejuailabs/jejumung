@@ -1,6 +1,7 @@
 import * as T from './vendor/three.module.js';
 import {createCompanion,preloadCompanionAssets} from './companion.js?v=nature-8';
 import {characterFor} from './characters.js';
+import {roomView} from './mobile-retreat-layout.js';
 
 // Layered, living rest scenes. The still photo is split by depth into far/mid/near planes that
 // drift with parallax; water ripples and sparkles, foliage sways and light dapples through
@@ -73,7 +74,7 @@ export function createLoungeRenderer(field,{audio=null,onOverlay=null}={}){
  const layers=[],models=new Map(),leaving=[];
  let depthSampler=null,meta=null,dressing={};
  preloadCompanionAssets(T);
- function fitCamera(){if(!description)return;const r=field.getBoundingClientRect();if(!r.width||!r.height)return;const {width,height}=description,fieldAspect=r.width/r.height,imageAspect=width/height;let vw=width,vh=height;if(fieldAspect<imageAspect)vw=height*fieldAspect;else vh=width/fieldAspect;camera.left=-vw/2;camera.right=vw/2;camera.top=vh/2;camera.bottom=-vh/2;camera.updateProjectionMatrix();}
+ function fitCamera(){if(!description)return;const r=field.getBoundingClientRect();if(!r.width||!r.height)return;const{vw,vh}=roomView(description.width,description.height,r.width,r.height,description.fit||'cover');camera.left=-vw/2;camera.right=vw/2;camera.top=vh/2;camera.bottom=-vh/2;camera.updateProjectionMatrix();}
  const observer=new ResizeObserver(()=>{const r=field.getBoundingClientRect();if(r.width&&r.height){renderer.setSize(r.width,r.height,false);renderer.getDrawingBufferSize(size);target.setSize(Math.max(2,size.x),Math.max(2,size.y));post.uniforms.resolution.value.set(size.x,size.y);fitCamera();}});observer.observe(field);
 
  function disposeLayers(){for(const l of layers){world.remove(l.mesh);l.mesh.geometry.dispose();l.mesh.material.uniforms.map.value?.dispose();}layers.length=0;}
@@ -228,7 +229,7 @@ export function createLoungeRenderer(field,{audio=null,onOverlay=null}={}){
    const u=T.MathUtils.clamp((now-model.t0)/model.duration,0,1),k=model.mode==='fade'?u:1-u,pop=k<1?1-Math.pow(1-k,3):1;
    model.companion.update({dt,time:idleTime,pose:slot.pose,walking:false,profile});applyPlacement(model,1);
    model.root.visible=model.contact.visible=model.ground.visible=k>.02;model.root.scale.multiplyScalar(Math.max(.01,pop));model.root.position.y+=(1-pop)*model.root.scale.x*.6;
-   if(u>=1){if(model.mode==='fade'){model.mode='seated';model.nextCreak=now+6000+Math.random()*9000;audio?.foley('splash',{pan:panFor(model),gain:.7});}else return true;}return false;
+   if(u>=1){if(model.mode==='fade'){model.mode='seated';model.nextCreak=now+6000+Math.random()*9000;audio?.foley(description.profile==='coastPaddles'?'splash':'rustle',{pan:panFor(model),gain:.7});}else return true;}return false;
   }
   model.companion.update({dt,time:idleTime,pose:slot.pose,walking:false,profile});applyPlacement(model,1);model.companion.root.userData.events.length=0;
   if(slot.pose==='lie'&&model.nextCreak&&now>model.nextCreak&&description.profile!=='coastPaddles'){model.nextCreak=now+9000+Math.random()*12000;audio?.foley('creak',{pan:panFor(model),gain:.6});}
@@ -243,15 +244,15 @@ export function createLoungeRenderer(field,{audio=null,onOverlay=null}={}){
    for(const l of layers){l.mesh.material.uniforms.time.value=time;l.mesh.position.x=dx*(1-l.parallax);l.mesh.position.y=dy*(1-l.parallax);const s=1+(zoom-1)*(l.parallax-1);l.mesh.scale.set(s,s,1);}
    for(const model of models.values()){advance(model,now,dt,time);const p=model.parallax??1,s=1+(zoom-1)*(p-1);model.group.position.set(dx*(1-p),dy*(1-p),0);model.group.scale.set(s,s,1);}
    for(let i=leaving.length-1;i>=0;i--){const model=leaving[i];if(advance(model,now,dt,time)){disposeModel(model);leaving.splice(i,1);}else{const p=model.parallax??1,s=1+(zoom-1)*(p-1);model.group.position.set(dx*(1-p),dy*(1-p),0);model.group.scale.set(s,s,1);}}
-   if(onOverlay){const positions=new Map(),v=new T.Vector3();for(const[id,model]of models){if(!model.root.visible){positions.set(id,{x:0,y:0,scale:1,visible:false});continue;}const lift=model.slot.pose==='lie'&&model.mode==='seated'?.75:1.32;v.copy(model.root.position);v.y+=model.root.scale.x*lift;v.multiply(model.group.scale).add(model.group.position);v.project(camera);positions.set(id,{x:(v.x+1)*50,y:(1-v.y)*50,scale:T.MathUtils.clamp(.55+model.root.scale.x/150,.85,1.15),visible:true});}onOverlay(positions);}
+   if(onOverlay){const positions=new Map(),v=new T.Vector3();for(const[id,model]of models){if(!model.root.visible){positions.set(id,{x:0,y:0,scale:1,visible:false});continue;}const lift=model.slot.pose==='lie'&&model.mode==='seated'?.75:1.32;if(description.fit==='contain'&&model.mode==='seated'&&model.slot.pose==='lie'){v.copy(toWorld(...model.slot.head));v.y+=model.root.scale.x*.5;}else{v.copy(model.root.position);v.y+=model.root.scale.x*lift;}if(description.fit==='contain')v.y+=camera.top*2/Math.max(1,field.clientHeight)*17;v.multiply(model.group.scale).add(model.group.position);v.project(camera);positions.set(id,{x:(v.x+1)*50,y:(1-v.y)*50,scale:T.MathUtils.clamp(.55+model.root.scale.x/150,.85,1.15),visible:true});}onOverlay(positions);}
    post.uniforms.time.value=time;
-   renderer.setRenderTarget(target);renderer.setClearColor(0,0);renderer.clear();renderer.render(world,camera);renderer.setRenderTarget(null);renderer.render(postScene,postCamera);
+   renderer.setRenderTarget(target);renderer.setClearColor(0,0);renderer.clear();renderer.render(world,camera);renderer.setRenderTarget(null);renderer.render(postScene,postCamera);field.dataset.renderedScene=description.id||description.title;
   }
   frame=requestAnimationFrame(tick);
  }
  return{
   scene(value){
-   description=value;dressing=value.dressing||{};generation++;sceneReady=false;renderer.domElement.style.visibility='hidden';field.style.backgroundImage=`url("${value.background}")`;
+   description=value;delete field.dataset.renderedScene;dressing=value.dressing||{};generation++;sceneReady=false;renderer.domElement.style.visibility='hidden';field.style.backgroundImage=`url("${value.background}")`;
    fitCamera();foreground.replaceChildren();
    for(const model of models.values())disposeModel(model);models.clear();for(const model of leaving)disposeModel(model);leaving.length=0;
    this.fresh=true;buildScene(value,generation).catch(error=>console.warn('쉼터 장면 준비 실패',error));
