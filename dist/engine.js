@@ -112,18 +112,25 @@ function createLightProbe(){
 function createComposite(look){
  const size=new THREE.Vector2();renderer.getDrawingBufferSize(size);
  const target=new THREE.WebGLRenderTarget(Math.max(2,size.x),Math.max(2,size.y),{samples:4,depthBuffer:true});
- const material=new THREE.ShaderMaterial({depthTest:false,depthWrite:false,uniforms:{video:{value:videoTexture},layer:{value:target.texture},resolution:{value:new THREE.Vector2(size.x,size.y)},time:{value:0},softness:{value:look.softness??.8},grain:{value:look.grain??.035},vignette:{value:look.vignette??.22},contrast:{value:look.contrast??1.03},saturation:{value:look.saturation??1.04},lift:{value:look.lift??0},wrap:{value:look.wrap??.5},fit:{value:new THREE.Vector4(1,1,0,0)},showLayer:{value:1}},
+ const material=new THREE.ShaderMaterial({depthTest:false,depthWrite:false,uniforms:{video:{value:videoTexture},layer:{value:target.texture},resolution:{value:new THREE.Vector2(size.x,size.y)},time:{value:0},softness:{value:look.softness??.8},grain:{value:look.grain??.035},vignette:{value:look.vignette??.22},contrast:{value:look.contrast??1.03},saturation:{value:look.saturation??1.04},lift:{value:look.lift??0},wrap:{value:look.wrap??.5},sharpen:{value:look.sharpen??.55},fit:{value:new THREE.Vector4(1,1,0,0)},showLayer:{value:1}},
   vertexShader:'varying vec2 vUv;void main(){vUv=uv;gl_Position=vec4(position.xy,0.,1.);}',
-  fragmentShader:`precision highp float;uniform sampler2D video,layer;uniform vec2 resolution;uniform float time,softness,grain,vignette,contrast,saturation,lift,wrap,showLayer;uniform vec4 fit;varying vec2 vUv;
+  fragmentShader:`precision highp float;uniform sampler2D video,layer;uniform vec2 resolution;uniform float time,softness,grain,vignette,contrast,saturation,lift,wrap,showLayer,sharpen;uniform vec4 fit;varying vec2 vUv;
   float hash(vec2 p){return fract(sin(dot(p,vec2(12.9898,78.233)))*43758.5453);}
+  // three.js uploads video textures without hardware sRGB decoding, so decode here before mixing in linear light.
+  vec3 srgbToLinear(vec3 c){return mix(pow((c+.055)/1.055,vec3(2.4)),c/12.92,vec3(lessThanEqual(c,vec3(.04045))));}
+  vec3 videoAt(vec2 p){return srgbToLinear(texture2D(video,clamp(p,0.,1.)).rgb);}
   void main(){
    vec2 uv=vUv,px=1./resolution,vuv=clamp(uv*fit.xy+fit.zw,0.,1.);
-   vec3 bg=texture2D(video,vuv).rgb;
+   vec3 bg=videoAt(vuv);
+   // Unsharp mask on the footage: the 720p stream is softer than the screen it fills.
+   vec2 u1=px*vec2(1.,1.)*fit.xy;
+   vec3 near=(videoAt(vuv+vec2(u1.x,0.))+videoAt(vuv-vec2(u1.x,0.))+videoAt(vuv+vec2(0.,u1.y))+videoAt(vuv-vec2(0.,u1.y)))*.25;
+   bg=max(bg+(bg-near)*sharpen,0.);
    vec2 s=px*softness;
    vec4 fg=texture2D(layer,uv)*.36+(texture2D(layer,uv+vec2(s.x,0.))+texture2D(layer,uv-vec2(s.x,0.))+texture2D(layer,uv+vec2(0.,s.y))+texture2D(layer,uv-vec2(0.,s.y)))*.16;
    fg*=showLayer;
-   vec2 w=px*3.;
-   vec3 bgBlur=(texture2D(video,clamp(vuv+vec2(w.x,0.),0.,1.)).rgb+texture2D(video,clamp(vuv-vec2(w.x,0.),0.,1.)).rgb+texture2D(video,clamp(vuv+vec2(0.,w.y),0.,1.)).rgb+texture2D(video,clamp(vuv-vec2(0.,w.y),0.,1.)).rgb)*.25;
+   vec2 w=px*3.*fit.xy;
+   vec3 bgBlur=(videoAt(vuv+vec2(w.x,0.))+videoAt(vuv-vec2(w.x,0.))+videoAt(vuv+vec2(0.,w.y))+videoAt(vuv-vec2(0.,w.y)))*.25;
    float edge=clamp(fg.a*(1.-fg.a)*4.,0.,1.);
    vec3 fgColor=fg.rgb+bgBlur*fg.a*edge*wrap*.6;
    vec3 col=bg*(1.-fg.a)+fgColor;

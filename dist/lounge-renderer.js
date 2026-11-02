@@ -16,20 +16,23 @@ void main(){
  vec3 m=texture2D(motion,vUv).rgb*hasMotion;
  vec2 uv=vUv;
  float w=m.r*water;
- vec2 ripple=vec2(noise(uv*vec2(60.,140.)+vec2(time*.25,time*.6)),noise(uv*vec2(90.,120.)-vec2(time*.2,time*.5)))-.5;
- uv+=ripple*texel*2.4*w;
+ // Water: a slow swell (large, travelling) plus finer ripples, both as UV displacement.
+ float swell=sin(vUv.y*18.-time*.9+noise(vUv*vec2(3.,5.))*2.5);
+ vec2 ripple=vec2(noise(uv*vec2(40.,90.)+vec2(time*.3,time*.7)),noise(uv*vec2(70.,100.)-vec2(time*.25,time*.6)))-.5;
+ uv+=(ripple*5.5+vec2(0.,swell*2.2))*texel*w;
+ // Foliage: gusts travel across the canopy; displacement grows toward the top of the image.
  float g=m.g*sway*mix(swayBottom,swayTop,vUv.y);
- float gust=sin(time*.9+vUv.x*9.+noise(vUv*6.+time*.15)*4.)*.5+noise(vUv*25.+vec2(time*.35,time*.5))-.5;
- uv+=vec2(gust,gust*.35)*texel*1.7*g;
+ float gust=sin(time*.8+vUv.x*7.+noise(vUv*4.+time*.12)*5.)*.6+(noise(vUv*18.+vec2(time*.5,time*.7))-.5)*1.2;
+ uv+=vec2(gust,gust*.45)*texel*4.5*g;
  vec4 c=texture2D(map,uv);
  // Glints: sparse, clustered where a slow large-scale field peaks, so the sea twinkles instead of snowing.
  float cluster=noise(vUv*vec2(9.,14.)+vec2(time*.05,time*.04));cluster=smoothstep(.55,.9,cluster);
  float sp=noise(vUv*vec2(420.,900.)+vec2(time*1.3,-time*.9));
  sp=smoothstep(.88,.98,sp)*cluster*(.6+.4*sin(time*6.+vUv.x*300.));
  c.rgb+=sp*w*.45*vec3(1.,.98,.9);
- c.rgb*=1.+w*.045*sin(vUv.y*40.-time*1.1+noise(vUv*8.)*3.);
+ c.rgb*=1.+w*.10*(swell*.6+.4*sin(vUv.y*42.-time*1.3+noise(vUv*9.)*3.));
  float dap=noise(vUv*vec2(14.,10.)+vec2(time*.12,time*.08));
- c.rgb*=1.+(dap-.5)*dapple*m.g;
+ c.rgb*=1.+(dap-.5)*dapple*m.g+gust*.025*g;
  gl_FragColor=c;
 }`;
 const POST_VERT='varying vec2 vUv;void main(){vUv=uv;gl_Position=vec4(position.xy,0.,1.);}';
