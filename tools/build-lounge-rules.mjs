@@ -5,7 +5,8 @@ const members=uid=>'('+slots.map(s=>`root.child('jejumungV6/rooms').child($room)
 const ownMember=members('auth.uid'),ownerMember=members('$uid');
 const text=max=>({'.validate':`newData.isString() && newData.val().length > 0 && newData.val().length <= ${max}`});
 const seat={
- '.write':"auth != null && (!data.exists() || data.child('uid').val() == auth.uid) && (!newData.exists() || newData.child('uid').val() == auth.uid)",
+// A seat whose heartbeat is older than 20 minutes is abandoned: anyone may clear or take it.
+ '.write':"auth != null && (!data.exists() || data.child('uid').val() == auth.uid || data.child('at').val() < now - 1200000) && (!newData.exists() || newData.child('uid').val() == auth.uid)",
  '.validate':"$slot.matches(/^s0[0-4]$/) && (!$room.matches(/^coast_hammock_/) || $slot != 's04') && newData.hasChildren(['uid','name','character','at','lease'])",
  uid:{'.validate':'newData.val() == auth.uid'},name:text(16),character:{'.validate':"newData.val() == 'stone' || newData.val() == 'citrus' || newData.val() == 'cloud' || newData.val() == 'sprout'"},
  at:{'.validate':'newData.isNumber() && newData.val() > 0 && newData.val() <= now'},lease:text(64),'$other':{'.validate':false}

@@ -1,5 +1,11 @@
+// `slow` clips were re-timed to 0.72x offline from the 60 fps originals, so every frame is real.
+// `path30` is the hand path carried by the per-frame camera solve, with ground speed at the feet.
+// `light` is the per-clip sun/fill match and the composite look (sun = direction toward the sun).
 export const CLIPS = [
- {id:'IMG_2207',title:'노을 다리',file:'IMG_2207.MOV',duration:11.543333,src:'/lab/media/IMG_2207/index.m3u8',poster:'/lab/media/IMG_2207.jpg',calibrated:true},
- {id:'IMG_0575',title:'해안 데크 산책',file:'IMG_0575.MOV',duration:58.671667,src:'/lab/media/IMG_0575/index.m3u8',poster:'/lab/media/IMG_0575.jpg',path:'/lab/paths/IMG_0575.json',calibrated:true},
- {id:'IMG_0965',title:'숲길 산책',file:'IMG_0965.MOV',duration:161.311667,src:'/lab/media/IMG_0965/index.m3u8',poster:'/lab/media/IMG_0965.jpg',path:'/lab/paths/IMG_0965.json',calibrated:true}
+ {id:'IMG_2207',title:'노을 다리',surface:'wood',file:'IMG_2207.MOV',duration:16.041,slow:true,src:'/lab/media/IMG_2207/index.m3u8',poster:'/lab/media/IMG_2207.jpg',path30:'/lab/paths/IMG_2207-slow.json',calibrated:true,
+  light:{sun:[-1.2,.9,-5],sunColor:'#ffb073',sunIntensity:1.6,fill:[0,-.6,1.5],fillColor:'#35cfd6',fillIntensity:.9,shadowOpacity:.3,shadowRadius:4,softness:.9,grain:.04,vignette:.25,contrast:1.04,saturation:1.05,envIntensity:.7}},
+ {id:'IMG_0575',title:'해안 데크 산책',surface:'wood',file:'IMG_0575.MOV',duration:81.5,slow:true,src:'/lab/media/IMG_0575/index.m3u8',poster:'/lab/media/IMG_0575.jpg',path:'/lab/paths/IMG_0575.json',path30:'/lab/paths/IMG_0575-slow.json',calibrated:true,
+  light:{sun:[2.4,4.2,2.2],sunColor:'#ffe6c2',sunIntensity:2.5,fill:[-2,2,-4],fillColor:'#cfe3f5',fillIntensity:.5,shadowOpacity:.42,shadowRadius:2.5,softness:.8,grain:.03,vignette:.2,contrast:1.03,saturation:1.03,envIntensity:.55}},
+ {id:'IMG_0965',title:'숲길 산책',surface:'dirt',file:'IMG_0965.MOV',duration:223.967,slow:true,src:'/lab/media/IMG_0965/index.m3u8',poster:'/lab/media/IMG_0965.jpg',path:'/lab/paths/IMG_0965.json',path30:'/lab/paths/IMG_0965-slow.json',calibrated:true,
+  light:{sun:[.8,5,1.4],sunColor:'#f6f1d4',sunIntensity:1.5,fill:[-2,2,3],fillColor:'#d8ead0',fillIntensity:.6,shadowOpacity:.24,shadowRadius:5,softness:.9,grain:.035,vignette:.22,contrast:1.02,saturation:1.04,envIntensity:.6}}
 ];

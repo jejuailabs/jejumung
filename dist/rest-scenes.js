@@ -1,5 +1,6 @@
 export const REST_SCENES={
  forest:{
+  layers:'/lab/scenes/forest/',dressing:{sun:[.35,1,.9],sunColor:'#f7f1d6',sunIntensity:1.5,hemiIntensity:2.3,shadowOpacity:.22,groundTilt:1.15,entry:{x:724,y:1070,scale:112},entryMode:'walk',water:0,swayAmount:1,dapple:.07,drift:.006,zoom:.012},
   title:'숲속 쉼터',width:1448,height:1086,image:'/lab/media/forest-rest.png',alt:'숲속 벤치와 해먹이 놓인 쉼터',entryPose:'stand',entrySpot:'bench-front',allowStand:true,standing:{x:798,y:865,scale:95,yaw:-.15},
   spots:{
    'bench-front':{pose:'sit',x:395,y:780,scale:115,yaw:-.12,name:'앞쪽 벤치',label:'벤치',button:[.29,.77]},
@@ -10,6 +11,7 @@ export const REST_SCENES={
   }
  },
  coastLounge:{
+  layers:'/lab/scenes/coastLounge/',dressing:{sun:[.7,1,.6],sunColor:'#ffe6c2',sunIntensity:2.4,hemiIntensity:2.2,shadowOpacity:.34,groundTilt:1.2,entry:{x:150,y:346,scale:62},entryMode:'walk',water:1,swayAmount:.8,dapple:.03,drift:.005,zoom:.01},
   title:'바다 선베드',width:625,height:351,image:'/lab/media/coast-lounge.png',alt:'푸른 바다 앞 데크의 선베드와 파라솔',entryPose:'lie',entrySpot:'sunbed-front',allowStand:false,allowedPoses:['lie'],standing:{x:252,y:282,scale:49,yaw:-.25},
   spots:{
    'sunbed-front':{pose:'lie',allowed:['lie'],name:'앞쪽 선베드',label:'선베드',button:[.66,.84],sprite:{view:'sunbed',head:[370,235],feet:[450,261]},poses:{sit:{x:397,y:260,scale:44,yaw:-.4},lie:{x:432,y:264,scale:65,roll:1.18,yaw:.10,pitch:.10}}},
@@ -18,6 +20,7 @@ export const REST_SCENES={
   }
  },
  coastHammocks:{
+  layers:'/lab/scenes/coastHammocks/',dressing:{sun:[.7,1,.5],sunColor:'#ffe6c2',sunIntensity:2.4,hemiIntensity:2.2,shadowOpacity:.3,groundTilt:1.2,entry:{x:215,y:346,scale:52},entryMode:'walk',water:1,swayAmount:1,dapple:.04,drift:.006,zoom:.012},
   title:'바닷가 해먹',width:624,height:350,image:'/lab/media/coast-hammocks.png',alt:'바다를 마주한 나무 그늘 아래의 해먹',entryPose:'lie',entrySpot:'sea-hammock-front',allowStand:true,standing:{x:204,y:291,scale:44,yaw:-.15},
   spots:{
    'sea-hammock-front':{pose:'lie',allowed:['sit','lie'],name:'앞쪽 바다 해먹',label:'해먹',button:[.56,.83],sprite:{view:'hammock',head:[315,241],feet:[390,258]},maskWhen:['sit','lie'],mask:[[277,235],[309,253],[345,263],[382,260],[412,242],[417,237],[410,258],[383,277],[344,282],[309,270],[286,251]],poses:{sit:{x:350,y:261,scale:31,yaw:.12},lie:{x:385,y:260,scale:47,roll:1.22,yaw:.10,pitch:.07}}},
@@ -25,6 +28,7 @@ export const REST_SCENES={
   }
  },
  coastPaddles:{
+  layers:'/lab/scenes/coastPaddles/',dressing:{sun:[.6,1,.8],sunColor:'#fff2d8',sunIntensity:2.6,hemiIntensity:2.4,shadowOpacity:.28,groundTilt:.9,entry:{x:617,y:700,scale:60},entryMode:'fade',water:.7,swayAmount:.8,dapple:.02,drift:.005,zoom:.01},
   title:'에메랄드빛 바다 · 패들보드',width:1235,height:703,image:'/lab/media/coast-paddleboards.png',alt:'맑은 에메랄드빛 물 위에 떠 있는 여러 패들보드',entryPose:'lie',entrySpot:'paddle-white',allowStand:false,allowedPoses:['lie'],
   spots:{
    'paddle-white':{pose:'lie',allowed:['lie'],name:'흰색 패들보드',label:'보드',button:[.40,.69],sprite:{view:'overhead',head:[426,365],feet:[533,437]},poses:{sit:{x:477,y:422,scale:60,yaw:-.25},lie:{x:526,y:445,scale:62,roll:.92,yaw:.1,pitch:.12}}},

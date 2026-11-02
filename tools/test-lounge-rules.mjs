@@ -22,6 +22,12 @@ try{
  const snap=await request('/seats/s02',a,'GET',undefined,{'X-Firebase-ETag':'true'}),etag=snap.headers.get('etag');
  const race=await Promise.all([request('/seats/s02',a,'PUT',profile(a),{'if-match':etag}),request('/seats/s02',b,'PUT',profile(b),{'if-match':etag})]);
  assert.equal(race.filter(r=>r.status===200).length,1);passed.push('competing atomic claims have exactly one winner');
+ // A seat whose heartbeat stopped more than 20 minutes ago may be cleared (or taken) by another guest.
+ assert.equal((await request('/seats/s03',a,'PUT',{...profile(a),at:Date.now()-25*60*1000})).status,200);
+ assert.equal((await request('/seats/s03',b,'DELETE')).status,200);passed.push('abandoned seat (stale heartbeat) can be cleared by another guest');
+ assert.equal((await request('/seats/s03',a,'PUT',{...profile(a),at:Date.now()-5*60*1000})).status,200);
+ assert.equal((await request('/seats/s03',b,'DELETE')).status,401);passed.push('recent seat still protected');
+ assert.equal((await request('/seats/s03',a,'DELETE')).status,200);
  console.log(JSON.stringify({passed},null,2));
 }finally{
  for(const u of users){

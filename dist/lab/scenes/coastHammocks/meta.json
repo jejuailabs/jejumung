@@ -1,0 +1,41 @@
+{
+ "scene": "coastHammocks",
+ "source": "coast-hammocks.png",
+ "sourceSize": [
+  624,
+  350
+ ],
+ "size": [
+  1920,
+  1077
+ ],
+ "bands": [
+  0.72,
+  0.48
+ ],
+ "parallax": [
+  1.0,
+  0.62,
+  0.3
+ ],
+ "sway": [
+  0.8,
+  0.2
+ ],
+ "horizon": 0.37,
+ "upscale": "swin2sr-x4 (869s)",
+ "depth": "depth-anything-v2-small",
+ "coverage": {
+  "near": 0.058,
+  "mid": 0.22,
+  "water": 0.138,
+  "foliage": 0.042
+ },
+ "bytes": {
+  "depth.png": 32982,
+  "far.jpg": 450372,
+  "mid.webp": 186552,
+  "motion.png": 249796,
+  "near.webp": 46354
+ }
+}

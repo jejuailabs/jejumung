@@ -1,0 +1,41 @@
+{
+ "scene": "coastPaddles",
+ "source": "coast-paddleboards.png",
+ "sourceSize": [
+  1235,
+  703
+ ],
+ "size": [
+  1920,
+  1093
+ ],
+ "bands": [
+  0.75,
+  0.5
+ ],
+ "parallax": [
+  1.0,
+  0.7,
+  0.45
+ ],
+ "sway": [
+  0.7,
+  0.4
+ ],
+ "horizon": 0.0,
+ "upscale": "lanczos+unsharp",
+ "depth": "depth-anything-v2-small",
+ "coverage": {
+  "near": 0.037,
+  "mid": 0.009,
+  "water": 0.482,
+  "foliage": 0.226
+ },
+ "bytes": {
+  "depth.png": 15584,
+  "far.jpg": 751965,
+  "mid.webp": 37744,
+  "motion.png": 353910,
+  "near.webp": 39446
+ }
+}

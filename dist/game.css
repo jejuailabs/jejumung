@@ -1,0 +1,119 @@
+/* Game-style presentation: full-bleed stage, overlay HUD, no dashboard chrome. Loaded last. */
+:root{--mint:#b7ded6;--ink:#102527;--text:#edece3;--glass:#0c1d1ab8;--glass-border:#ffffff2a}
+body.game{background:#06100f;overflow-x:hidden}
+body.game header,body.game footer{display:none}
+body.game main{max-width:none;margin:0;min-height:100svh;display:flex;flex-direction:column;align-items:center;justify-content:center}
+body.game .stage{width:min(100vw,calc(100svh*16/9));min-width:0;max-width:none;margin:0;border:0;border-radius:0;background:#000;box-shadow:0 0 120px #000}
+body.game.lounge-mode main{justify-content:flex-start}
+/* Top strip */
+body.game .scene-top{padding:12px 18px;align-items:center;background:linear-gradient(#000a,transparent 90%)}
+.brand-mini{color:#f0f1e6;text-decoration:none;font-size:15px;font-weight:700;letter-spacing:.3px;text-shadow:0 1px 8px #000a}
+.scene-name{display:none}
+.status-pill{margin-left:auto;font-size:11px;color:#e8f0e6;background:var(--glass);border:1px solid var(--glass-border);border-radius:20px;padding:5px 12px;backdrop-filter:blur(8px)}
+body.game .playing-state{display:none}
+/* HUD */
+.hud{position:absolute;inset:auto 0 0;z-index:5;padding:28px 18px 14px;background:linear-gradient(transparent,#000c);transition:opacity .5s ease}
+.stage.hud-idle .hud{opacity:.22}
+.gate:not([hidden])~.hud{opacity:0;pointer-events:none}
+.stage.hud-idle .hud:hover,.stage.hud-idle .hud:focus-within{opacity:1}
+.hud .progress{position:absolute;left:0;right:0;bottom:0;width:100%;height:4px;margin:0;appearance:none;background:#ffffff22;cursor:pointer;accent-color:var(--mint)}
+.hud .progress::-webkit-slider-thumb{appearance:none;width:12px;height:12px;border-radius:50%;background:var(--mint);box-shadow:0 0 0 3px #0008}
+.hud .progress::-moz-range-thumb{width:12px;height:12px;border:0;border-radius:50%;background:var(--mint)}
+.hud-row{display:flex;align-items:center;gap:12px}
+.hud-main{display:flex;gap:8px;flex-wrap:wrap;justify-content:center;flex:1}
+.hud button{font-size:12px;padding:10px 16px;background:var(--glass);border:1px solid var(--glass-border);backdrop-filter:blur(8px);border-radius:22px;color:#eef3ea}
+.hud button.primary{background:#d9ead8;color:var(--ink);border-color:#e9f3e5;font-weight:700;min-width:118px}
+.hud button[aria-pressed=true]{background:#b7ded644;border-color:#b7ded6}
+.hud-side{display:flex;align-items:center;gap:6px}
+.hud .hint{margin:8px 0 0;text-align:center;font-size:10px;color:#ffffff88;letter-spacing:.3px}
+#travelerChoices.character-picker{margin:0;gap:5px}
+#travelerChoices.character-picker button{padding:4px 9px 4px 5px;border-radius:20px;background:var(--glass);border:1px solid var(--glass-border)}
+#travelerChoices.character-picker button[aria-pressed=true]{background:#d9ead8;color:#173c31}
+#travelerChoices.character-picker svg{width:22px;height:26px}
+#travelerChoices.character-picker span{font-size:10px}
+/* Gate */
+body.game .gate{background:linear-gradient(90deg,#06100fd0,#06100f88 55%,#06100f30);padding:0;justify-content:flex-start;align-items:stretch}
+.gate-card{display:flex;align-items:center;gap:24px;width:100%;height:100%;padding:0 6%}
+.gate-stage{width:min(34%,320px);aspect-ratio:4/5;flex:0 0 auto;position:relative;filter:drop-shadow(0 18px 24px #0009)}
+.gate-stage canvas{width:100%;height:100%;display:block}
+.gate-copy{text-align:left;max-width:520px}
+.gate-copy .kicker{font-size:12px;letter-spacing:2px;color:var(--mint);margin:0 0 6px}
+body.game .gate h1{font:clamp(26px,3.6vw,48px)/1.25 "Batang",serif;margin:4px 0 10px;text-shadow:0 2px 16px #000a}
+.gate-copy .sub{font-size:13px;color:#d8e2d6;margin:0 0 12px}
+body.game .gate .character-picker{margin:4px 0 0;gap:6px}
+body.game .gate .character-picker button{min-width:78px;padding:6px 10px;background:var(--glass);border:1px solid var(--glass-border);border-radius:14px}
+body.game .gate .character-picker button[aria-pressed=true]{background:#d9ead8;color:#173c31}
+body.game .gate button#enter{margin-top:16px;padding:14px 30px;border-radius:26px;font-size:14px;box-shadow:0 8px 30px #0008}
+/* Toasts */
+.error-toast{position:absolute;z-index:7;left:50%;bottom:120px;transform:translateX(-50%);background:#3a1f16ee;color:#ffd4c2;border:1px solid #ff9f7a66;border-radius:12px;padding:10px 14px;font-size:12px;max-width:90%}
+body.game .arrival{background:var(--glass);backdrop-filter:blur(10px);border-color:var(--glass-border)}
+/* Lab tools */
+.lab{width:min(1100px,92%);margin:18px auto;color:#a2b4a8}
+.lab .actions{display:flex;gap:8px;flex-wrap:wrap;margin:10px 0}
+body.game.lab-mode footer{display:block}
+/* Lounge as a scene with overlays */
+body.game .lounge{padding:0;width:100%;position:relative}
+.lounge-view{position:relative}
+body.game .lounge-grid{display:block}
+body.game .lounge-view{width:min(100vw,calc((100svh - 70px)*var(--scene-ratio,1.78)));margin:0 auto;border-radius:0;border:0;background:#000}
+body.game .lounge-heading{position:absolute;top:0;left:0;right:0;z-index:7;margin:0;padding:12px 18px;background:linear-gradient(#000b,transparent);align-items:flex-start;pointer-events:none}
+body.game .lounge-heading>*{pointer-events:auto}
+body.game .lounge-heading h1{font:clamp(16px,2.2vw,24px)/1.3 "Batang",serif;text-shadow:0 2px 12px #000c}
+body.game .lounge-kicker{color:#cfe0d8;text-shadow:0 1px 8px #000c}
+body.game .lounge-heading button{background:#d9ead8;color:#173c31;border-radius:22px;padding:9px 16px}
+body.game .lounge-toolbar{position:absolute;left:18px;right:18px;top:68px;z-index:7;margin:0;pointer-events:none}
+body.game .lounge-toolbar>*{pointer-events:auto}
+body.game .lounge button{background:var(--glass);border:1px solid var(--glass-border);backdrop-filter:blur(8px);border-radius:20px;color:#eef3ea;font-size:11px;padding:7px 12px}
+body.game .lounge-toolbar button[aria-pressed=true]{background:#d9ead8;color:#173c31}
+body.game .lounge-roomnav span{color:#eaf0e6;text-shadow:0 1px 6px #000}
+body.game .lounge-capacity{top:auto;bottom:14px;left:16px;background:var(--glass);border:1px solid var(--glass-border)}
+body.game .lounge-preview-label{top:auto;bottom:14px;right:16px}
+body.game .lounge-caption{position:absolute;left:50%;bottom:14px;transform:translateX(-50%);z-index:6;background:var(--glass);border:1px solid var(--glass-border);border-radius:20px;padding:6px 14px;backdrop-filter:blur(8px);white-space:nowrap;max-width:60%;overflow:hidden;text-overflow:ellipsis}
+body.game .lounge-chat{position:absolute;right:16px;bottom:56px;width:min(300px,38%);max-height:46%;min-height:0;z-index:8;background:var(--glass);border:1px solid var(--glass-border);backdrop-filter:blur(12px);border-radius:14px;transition:opacity .6s ease}
+body.game .lounge-chat.quiet{opacity:.5}
+body.game .lounge-chat:hover,body.game .lounge-chat:focus-within{opacity:1}
+body.game .lounge-chat h2{font-size:12px;padding:10px 12px 0}
+body.game .lounge-chat .chat-help{display:none}
+body.game .lounge-messages{min-height:60px;max-height:200px;padding:6px 12px}
+body.game .lounge-messages p{font-size:11px;margin-bottom:8px}
+body.game .lounge-messages .empty-chat{margin-top:6px;font-size:11px}
+body.game .lounge-chat form{padding:8px}
+body.game .lounge-chat form button{background:#d9ead8;color:#173c31;border-radius:18px}
+body.game .lounge-below{width:min(1100px,94%);margin:10px auto 18px;display:flex;align-items:center;gap:12px;flex-wrap:wrap}
+body.game .lounge-profile{margin:0}
+body.game .lounge-message{flex:1 1 100%;margin:0}
+body.game .lounge-fineprint{margin:0;flex:1 1 100%}
+/* Head tags and speech bubbles in the scene */
+.nature-seat[data-occupied=true]{transform:translate(-50%,-100%) scale(var(--tag-scale,1));transition:none;font-size:11px!important;padding:4px 10px!important}
+.nature-seat[data-occupied=true]::after{content:'';position:absolute;left:50%;bottom:-5px;width:1px;height:5px;background:#e7efd6aa}
+.nature-bubble{position:absolute;z-index:5;transform:translate(-50%,-100%) scale(var(--tag-scale,1));background:#f4f2e6;color:#1d3533;border-radius:14px;padding:6px 10px;font-size:11px;max-width:180px;white-space:pre-wrap;overflow-wrap:anywhere;box-shadow:0 4px 14px #0006;pointer-events:none;animation:bubble-in .25s ease-out}
+.nature-bubble::after{content:'';position:absolute;left:50%;bottom:-6px;margin-left:-6px;border:6px solid transparent;border-top-color:#f4f2e6;border-bottom:0}
+@keyframes bubble-in{from{opacity:0;transform:translate(-50%,-90%) scale(.8)}to{opacity:1;transform:translate(-50%,-100%) scale(var(--tag-scale,1))}}
+.nature-bubble.out{opacity:0;transition:opacity .5s}
+@media(max-width:860px){
+ .hud{padding:22px 10px 12px}.hud-row{gap:6px}.hud button{font-size:11px;padding:8px 11px}.hud button.primary{min-width:92px}.hud .hint{display:none}
+ #travelerChoices.character-picker span{display:none}#travelerChoices.character-picker button{padding:4px 5px}
+ .gate-card{flex-direction:column;justify-content:center;gap:8px;padding:10px 5%}.gate-stage{width:min(44%,180px)}.gate-copy{text-align:center}
+ body.game .gate h1{font-size:22px;margin:2px 0 6px}.gate-copy .sub{font-size:11px;margin-bottom:6px}body.game .gate .character-picker{justify-content:center}body.game .gate button#enter{margin-top:10px;padding:10px 22px;font-size:12px}
+ /* Small screens: the scene stays clean; heading, toolbar, caption and chat stack around it. */
+ body.game .lounge-view{display:flex;flex-direction:column;width:100%}
+ body.game .lounge-field{order:0}
+ body.game .lounge-heading{order:-1;position:static;background:none;padding:10px 12px 6px;align-items:center}
+ body.game .lounge-heading h1{font-size:15px}body.game .lounge-kicker{display:none}body.game .lounge-heading button{padding:6px 10px;font-size:11px;white-space:nowrap}
+ body.game .lounge-toolbar{order:1;position:static;display:flex;flex-wrap:nowrap;overflow-x:auto;gap:6px;padding:8px 10px 2px;scrollbar-width:none}
+ body.game .lounge-toolbar>*{display:flex;gap:6px;flex:0 0 auto}body.game .lounge-roomnav{margin:0}
+ body.game .lounge button{font-size:11px;padding:6px 10px;white-space:nowrap}
+ body.game .lounge-caption{order:2;position:static;transform:none;max-width:none;margin:8px 10px 0;font-size:10px;white-space:normal;background:none;border:0;padding:0 2px;backdrop-filter:none}
+ body.game .lounge-chat{order:3;position:static;width:auto;max-height:none;margin:10px 10px 0;transform:none}
+ body.game .lounge-capacity,body.game .lounge-preview-label{bottom:8px;font-size:9px;padding:3px 8px}
+ body.game .lounge-below{width:auto;margin:10px 10px 18px}
+}
+
+/* Portrait phones: the stage fills the screen and crops the footage's sides; the lounge field grows taller. */
+@media(orientation:portrait) and (max-width:860px){
+ body.game .stage{width:100vw;height:100svh;aspect-ratio:auto}
+ body.game .lounge-field{aspect-ratio:4/5}
+ body.game .lounge-view{width:100%}
+ .gate-card{padding:16px 6% 70px}
+ .gate-stage{width:min(52%,220px)}
+}

@@ -1,6 +1,6 @@
 import {initializeApp,getApps} from 'https://www.gstatic.com/firebasejs/13.1.0/firebase-app.js';
 import {initializeAuth,inMemoryPersistence,signInAnonymously} from 'https://www.gstatic.com/firebasejs/13.1.0/firebase-auth.js';
-import {getDatabase,ref,get,onValue,onDisconnect,runTransaction,remove,serverTimestamp,goOffline,goOnline} from 'https://www.gstatic.com/firebasejs/13.1.0/firebase-database.js';
+import {getDatabase,ref,get,onValue,onDisconnect,runTransaction,remove,update,serverTimestamp,goOffline,goOnline} from 'https://www.gstatic.com/firebasejs/13.1.0/firebase-database.js';
 import {LOUNGE_FIREBASE} from './lounge-config.js';
 import {sceneFor,parseRoom,LOUNGE_NAMESPACE} from './lounge-scenes.js';
 
@@ -8,7 +8,7 @@ export function createLoungeClient(changed){
  const app=getApps().find(a=>a.name==='lounge')||initializeApp(LOUNGE_FIREBASE,'lounge');
  const auth=initializeAuth(app,{persistence:inMemoryPersistence}),db=getDatabase(app);
  const handlers=new Map();
- let uid,login,current=null,subscriptions=[],seats={},messages={},connected=false,reconnecting=false,closed=true,generation=0;
+ let uid,login,current=null,subscriptions=[],seats={},messages={},connected=false,reconnecting=false,closed=true,generation=0,heartbeat=null;
  const check=attempt=>{if(closed||attempt!==generation)throw Object.assign(Error('Join cancelled'),{code:'join-cancelled'});};
  const path=id=>`${LOUNGE_NAMESPACE}/rooms/${id}`;
  const emit=()=>changed({uid,room:current?.room,seats,messages:Object.entries(messages).filter(([owner])=>Object.values(seats).some(s=>s.uid===owner)).flatMap(([owner,v])=>Object.entries(v.slots||{}).map(([key,m])=>({...m,id:owner+key,uid:owner}))).sort((a,b)=>a.at-b.at).slice(-50),connected});
@@ -16,7 +16,7 @@ export function createLoungeClient(changed){
  async function dispose(item){
   if(!item)return;
   // Keep disconnect cleanup armed until server-side deletion has succeeded.
-  await runTransaction(item.seat,value=>value?.lease===item.lease?null:undefined,{applyLocally:false});
+  await runTransaction(item.seat,value=>value===null||value?.lease===item.lease?null:undefined,{applyLocally:false});
   if(handlers.get(item.room+'/'+item.key)===item.lease)await item.disconnect.cancel();
   if(item.room!==current?.room&&handlers.get(item.room+'/chat')===item.lease){await remove(ref(db,path(item.room)+'/messages/'+uid));await item.chatDisconnect.cancel();}
  }
@@ -61,6 +61,8 @@ export function createLoungeClient(changed){
    const next=await claim(room,profile,preferred,attempt);
    if(closed||attempt!==generation){await dispose(next);check(attempt);}
    current=next;
+   // Heartbeat: refresh `at` so a seat whose client vanished can be told apart from a live one.
+   clearInterval(heartbeat);heartbeat=setInterval(()=>{if(current&&!closed&&connected)update(current.seat,{at:serverTimestamp()}).catch(()=>{});},240000);
    if(previous&&(previous.room!==next.room||previous.key!==next.key))await dispose(previous);
    seats={};messages={};watch();emit();return next;
   },
@@ -71,7 +73,7 @@ export function createLoungeClient(changed){
    await runTransaction(own,value=>{const seq=(value?.seq||0)+1;return{seq,lastAt:serverTimestamp(),slots:{...(value?.slots||{}),['m'+((seq-1)%5)]:{text:message,name:current.profile.name,at:serverTimestamp()}}};},{applyLocally:false});
   },
   async leave(){
-   const attempt=++generation;closed=true;subscriptions.forEach(fn=>fn());subscriptions=[];
+   const attempt=++generation;closed=true;clearInterval(heartbeat);subscriptions.forEach(fn=>fn());subscriptions=[];
    const old=current;current=null;seats={};messages={};connected=false;emit();
    try{await dispose(old);}finally{if(closed&&attempt===generation)goOffline(db);}
   }
