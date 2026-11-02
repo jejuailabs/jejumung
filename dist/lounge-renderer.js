@@ -1,6 +1,7 @@
 import * as T from './vendor/three.module.js';
 import {createCompanion,preloadCompanionAssets} from './companion.js?v=nature-8';
 import {characterFor} from './characters.js';
+import {roomView} from './mobile-retreat-layout.js';
 
 // Layered, living rest scenes. The still photo is split by depth into far/mid/near planes that
 // drift with parallax; water ripples and sparkles, foliage sways and light dapples through
@@ -78,7 +79,7 @@ export function createLoungeRenderer(field,{audio=null,onOverlay=null}={}){
  const layers=[],models=new Map(),leaving=[];
  let depthSampler=null,meta=null,dressing={};
  preloadCompanionAssets(T);
- function fitCamera(){if(!description)return;const r=field.getBoundingClientRect();if(!r.width||!r.height)return;const {width,height}=description,fieldAspect=r.width/r.height,imageAspect=width/height;let vw=width,vh=height;if(fieldAspect<imageAspect)vw=height*fieldAspect;else vh=width/fieldAspect;camera.left=-vw/2;camera.right=vw/2;camera.top=vh/2;camera.bottom=-vh/2;camera.updateProjectionMatrix();}
+ function fitCamera(){if(!description)return;const r=field.getBoundingClientRect();if(!r.width||!r.height)return;const{vw,vh}=roomView(description.width,description.height,r.width,r.height,description.fit||'cover');camera.left=-vw/2;camera.right=vw/2;camera.top=vh/2;camera.bottom=-vh/2;camera.updateProjectionMatrix();}
  const observer=new ResizeObserver(()=>{const r=field.getBoundingClientRect();if(r.width&&r.height){renderer.setSize(r.width,r.height,false);renderer.getDrawingBufferSize(size);target.setSize(Math.max(2,size.x),Math.max(2,size.y));post.uniforms.resolution.value.set(size.x,size.y);fitCamera();}});observer.observe(field);
 
  function disposeLayers(){for(const l of layers){world.remove(l.mesh);l.mesh.geometry.dispose();l.mesh.material.uniforms.map.value?.dispose();}layers.length=0;}
@@ -127,11 +128,10 @@ export function createLoungeRenderer(field,{audio=null,onOverlay=null}={}){
   // Models created before the scene finished loading need their band and cutouts now.
   for(const model of models.values())placeModel(model);
  }
- function bandFor(slot){
-  if(!depthSampler||!meta)return'far';
-  const [x,y]=slot.pose==='lie'?[(slot.head[0]+slot.feet[0])/2,(slot.head[1]+slot.feet[1])/2]:slot.anchor;
-  const v=depthSampler(x,y);return v>=meta.bands[0]?'near':v>=meta.bands[1]?'mid':'far';
- }
+ function bandAt(x,y){if(!depthSampler||!meta)return'far';const v=depthSampler(x,y);return v>=meta.bands[0]?'near':v>=meta.bands[1]?'mid':'far';}
+ function bandFor(slot){return bandAt(...(slot.pose==='lie'?[(slot.head[0]+slot.feet[0])/2,(slot.head[1]+slot.feet[1])/2]:slot.anchor));}
+ // While walking, the depth under the feet decides which photo layers pass in front of the guest.
+ const zAt=(x,y)=>BAND_Z[bandAt(x,y)]+y/description.height*40;
  // ---- Seat geometry ---------------------------------------------------------------------
  // Furniture faces every which way from photo to photo, so poses live in a ground frame
  // (y = ground normal, -z = away from the camera) tilted by the photo's look-down angle.
@@ -154,11 +154,15 @@ export function createLoungeRenderer(field,{audio=null,onOverlay=null}={}){
   const side=new T.Vector3().crossVectors(d,n0),roll=(slot.roll??ROLL[description.profile]??.4)*(Math.sign(side.dot(new T.Vector3(0,Math.sin(e),Math.cos(e))))||1);
   const n=n0.clone().multiplyScalar(Math.cos(roll)).addScaledVector(side,Math.sin(roll)).normalize(),x=new T.Vector3().crossVectors(d,n);
   const quaternion=new T.Quaternion().setFromAxisAngle(X_AXIS,e).multiply(new T.Quaternion().setFromRotationMatrix(new T.Matrix4().makeBasis(x,d,n)));
-  return slot._frame={e,profile:description.profile,quaternion,scale:L/1.16*slot.fit,recline:rho,heading:Math.atan2(sa,ca),projected:p};
+  return slot._frame={e,profile:description.profile,quaternion,scale:slot.scale??L/1.16*slot.fit,recline:rho,heading:Math.atan2(sa,ca),projected:p};
  }
  const key=(x,y,scale,quaternion)=>({position:toWorld(x,y),scale,quaternion});
  function finalKey(slot){
-  if(slot.pose==='lie'){const f=lieFrame(slot),head=new T.Vector3(0,1.18,0).applyQuaternion(f.quaternion).multiplyScalar(f.scale);return{position:toWorld(...slot.head).sub(head).setZ(0),quaternion:f.quaternion,scale:f.scale};}
+  if(slot.pose==='lie'){
+   const f=lieFrame(slot),centre=slot.align==='center',[hx,hy]=slot.head,[fx,fy]=slot.feet;
+   const at=centre?toWorld((hx+fx)/2,(hy+fy)/2):toWorld(hx,hy),offset=new T.Vector3(0,centre?.59:1.18,0).applyQuaternion(f.quaternion).multiplyScalar(f.scale);
+   return{position:at.sub(offset).setZ(0),quaternion:f.quaternion,scale:f.scale};
+  }
   return key(slot.anchor[0],slot.anchor[1]+.365*slot.scale,slot.scale,upright(slot.yaw||0));
  }
  // A lying seat is entered by sitting on its middle first, turned a little toward the feet end.
@@ -173,6 +177,7 @@ export function createLoungeRenderer(field,{audio=null,onOverlay=null}={}){
   return{position:base.position.clone().add(new T.Vector3(0,-.16*base.scale,0)),scale:base.scale,quaternion:base.quaternion};
  }
  const keyYaw=k=>new T.Euler().setFromQuaternion(new T.Quaternion().setFromAxisAngle(X_AXIS,-elevation()).multiply(k.quaternion),'YXZ').y;
+ function headPoint(slot){const k=finalKey(slot);return k.position.clone().add(new T.Vector3(0,1.18,0).applyQuaternion(k.quaternion).multiplyScalar(k.scale));}
  function contactFor(slot,scale){
   const {width,height}=description;
   if(slot.pose==='lie'){const [hx,hy]=slot.head,[fx,fy]=slot.feet,f=lieFrame(slot);return{x:hx+(fx-hx)*slot.fit*.43-width/2,y:height/2-hy-(fy-hy)*slot.fit*.43-3,angle:Math.atan2(fy-hy,hx-fx)-Math.PI/2,sx:f.scale*.55,sy:f.projected*slot.fit*1.25};}
@@ -182,7 +187,7 @@ export function createLoungeRenderer(field,{audio=null,onOverlay=null}={}){
  function placeModel(model){
   const slot=model.slot,band=bandFor(slot);model.band=band;model.parallax=(meta?.parallax||[1,1,1])[band==='near'?0:band==='mid'?1:2];
   const within=slot.pose==='lie'?(slot.head[1]+slot.feet[1])/2:slot.anchor[1];
-  model.z=BAND_Z[band]+within/description.height*40;
+  model.z=model.seatZ=BAND_Z[band]+within/description.height*40;
   // Hammock cloth in front of the body: a cut-out of the layer that holds the seat.
   if(model.cutout){model.group.remove(model.cutout);model.cutout.geometry.dispose();model.cutout.material.dispose();model.cutout=null;}
   if(slot.mask){
@@ -213,7 +218,7 @@ export function createLoungeRenderer(field,{audio=null,onOverlay=null}={}){
   model.ground.position.set(p.x,p.y,z-.5);model.ground.rotation.set(-(dressing.groundTilt??1.15),0,0);model.ground.scale.setScalar(scale);
  }
  function setTransform(model,x,y,scale,yaw){
-  model.root.position.copy(toWorld(x,y));model.root.position.z=model.z;model.root.scale.setScalar(scale);model.root.quaternion.copy(upright(yaw));footShadows(model,scale);
+  model.z=zAt(x,y);model.root.position.copy(toWorld(x,y));model.root.position.z=model.z;model.root.scale.setScalar(scale);model.root.quaternion.copy(upright(yaw));footShadows(model,scale);
  }
  function applyKey(model,k){model.root.position.set(k.position.x,k.position.y,model.z);model.root.scale.setScalar(k.scale);model.root.quaternion.copy(k.quaternion);}
  function blendKeys(a,b,u){return{position:a.position.clone().lerp(b.position,u),scale:T.MathUtils.lerp(a.scale,b.scale,u),quaternion:a.quaternion.clone().slerp(b.quaternion,u)};}
@@ -237,7 +242,16 @@ export function createLoungeRenderer(field,{audio=null,onOverlay=null}={}){
   const perch=perchKey(slot);return[{from:stand,to:perch,duration:600,pose:'sit'},{from:perch,to:final,duration:1000,pose:'lie'}];
  }
  // Walking route: entry -> optional approach waypoints (photo px) -> the stand point.
- const routeOf=(slot,e)=>{const s=standKey(slot);return[[e.x,e.y],...(slot.approach||[]),[s.position.x+description.width/2,description.height/2-s.position.y]];};
+ function routeOf(slot,e){
+  const s=standKey(slot),end=[s.position.x+description.width/2,description.height/2-s.position.y],trail=dressing.trail;
+  if(slot.approach||!trail)return[[e.x,e.y],...(slot.approach||[]),end];
+  let best={d:Infinity,i:0,p:trail[0]};
+  for(let i=1;i<trail.length;i++){
+   const a=trail[i-1],b=trail[i],dx=b[0]-a[0],dy=b[1]-a[1],t=T.MathUtils.clamp(((end[0]-a[0])*dx+(end[1]-a[1])*dy)/(dx*dx+dy*dy||1),0,1),p=[a[0]+dx*t,a[1]+dy*t],d=Math.hypot(end[0]-p[0],end[1]-p[1]);
+   if(d<best.d)best={d,i,p};
+  }
+  return[...trail.slice(0,best.i),best.p,end];
+ }
  function routeLength(points){let total=0;for(let i=1;i<points.length;i++)total+=Math.hypot(points[i][0]-points[i-1][0],points[i][1]-points[i-1][1]);return total;}
  function alongRoute(points,u){
   let left=u*routeLength(points);
@@ -290,7 +304,7 @@ export function createLoungeRenderer(field,{audio=null,onOverlay=null}={}){
    model.distance+=Math.abs(turnBy(model.turnFrom,model.turnTo))*dt/(model.duration/1000)*.25;
    model.companion.update({dt,time:idleTime,pose:'walk',walking:u<1,distance:model.distance,speed:.35,profile});drainSteps(model);
    if(u>=1){
-    if(model.mode==='turn'){model.mode='settle';model.segments=settleSegments(slot);model.segment=0;model.t0=now;audio?.foley(slot.pose==='lie'?'hammock':'rustle',{pan:panFor(model)});}
+    if(model.mode==='turn'){model.mode='settle';model.z=model.seatZ;model.segments=settleSegments(slot);model.segment=0;model.t0=now;audio?.foley(slot.pose==='lie'?'hammock':'rustle',{pan:panFor(model)});}
     else{model.mode='walkOut';model.t0=now;model.duration=model.walkDuration;}
    }
    return false;
@@ -315,7 +329,7 @@ export function createLoungeRenderer(field,{audio=null,onOverlay=null}={}){
    const u=T.MathUtils.clamp((now-model.t0)/model.duration,0,1),k=model.mode==='fade'?u:1-u,pop=k<1?1-Math.pow(1-k,3):1;
    model.companion.update({dt,time:idleTime,pose:slot.pose,walking:false,profile});applyPlacement(model);
    model.root.visible=model.contact.visible=model.ground.visible=k>.02;model.root.scale.multiplyScalar(Math.max(.01,pop));model.root.position.y+=(1-pop)*model.root.scale.x*.6;
-   if(u>=1){if(model.mode==='fade'){model.mode='seated';model.nextCreak=now+6000+Math.random()*9000;audio?.foley('splash',{pan:panFor(model),gain:.7});}else return true;}return false;
+   if(u>=1){if(model.mode==='fade'){model.mode='seated';model.nextCreak=now+6000+Math.random()*9000;audio?.foley(description.profile==='coastPaddles'?'splash':'rustle',{pan:panFor(model),gain:.7});}else return true;}return false;
   }
   model.companion.update({dt,time:idleTime,pose:slot.pose,walking:false,profile});applyPlacement(model);model.companion.root.userData.events.length=0;
   if(slot.pose==='lie'&&model.nextCreak&&now>model.nextCreak&&description.profile!=='coastPaddles'){model.nextCreak=now+9000+Math.random()*12000;audio?.foley('creak',{pan:panFor(model),gain:.6});}
@@ -340,7 +354,7 @@ export function createLoungeRenderer(field,{audio=null,onOverlay=null}={}){
    else svg+=dot(...slot.anchor,'#5aff8a',`${slot.id} ${slot.name} · 방향 ${Math.round((slot.yaw||0)*57.3)}°`);
   }
   debugSvg.innerHTML=svg;
-  window.__lounge={elevation:elevation()*57.3,models:[...models.values()].map(m=>({seat:m.slot.id,mode:m.mode,segment:m.segment,pose:m.slot.pose,scale:Math.round(m.root.scale.x),z:Math.round(m.z)}))};
+  window.__loungeRaw={models,world,camera,layers,renderer,tick};window.__lounge={elevation:elevation()*57.3,camera:[camera.left,camera.right,camera.top,camera.bottom].map(Math.round),layers:layers.map(l=>l.band+':'+l.mesh.position.z),models:[...models.values()].map(m=>({seat:m.slot.id,mode:m.mode,segment:m.segment,pose:m.slot.pose,scale:Math.round(m.root.scale.x),z:Math.round(m.z),at:[Math.round(m.root.position.x),Math.round(m.root.position.y),Math.round(m.root.position.z)],visible:m.root.visible,group:[m.group.position.z,m.group.scale.z]}))};
  }
  function tick(now){
   if(!active)return;const dt=Math.min(.05,(now-last)/1000);last=now;const time=now/1000;
@@ -351,16 +365,16 @@ export function createLoungeRenderer(field,{audio=null,onOverlay=null}={}){
    for(const l of layers){l.mesh.material.uniforms.time.value=time;l.mesh.position.x=dx*(1-l.parallax);l.mesh.position.y=dy*(1-l.parallax);const s=1+(zoom-1)*(l.parallax-1);l.mesh.scale.set(s,s,1);}
    for(const model of models.values()){advance(model,now,dt,time);const p=model.parallax??1,s=1+(zoom-1)*(p-1);model.group.position.set(dx*(1-p),dy*(1-p),0);model.group.scale.set(s,s,1);}
    for(let i=leaving.length-1;i>=0;i--){const model=leaving[i];if(advance(model,now,dt,time)){disposeModel(model);leaving.splice(i,1);}else{const p=model.parallax??1,s=1+(zoom-1)*(p-1);model.group.position.set(dx*(1-p),dy*(1-p),0);model.group.scale.set(s,s,1);}}
-   if(onOverlay){const positions=new Map(),v=new T.Vector3();for(const[id,model]of models){if(!model.root.visible){positions.set(id,{x:0,y:0,scale:1,visible:false});continue;}if(model.slot.pose==='lie'&&model.mode==='seated'){v.copy(toWorld(...model.slot.head));v.y+=model.root.scale.x*.42;}else{v.copy(model.root.position);v.y+=model.root.scale.x*1.32;}v.multiply(model.group.scale).add(model.group.position);v.project(camera);positions.set(id,{x:(v.x+1)*50,y:(1-v.y)*50,scale:T.MathUtils.clamp(.55+model.root.scale.x/150,.85,1.15),visible:true});}onOverlay(positions);}
+   if(onOverlay){const positions=new Map(),v=new T.Vector3();for(const[id,model]of models){if(!model.root.visible){positions.set(id,{x:0,y:0,scale:1,visible:false});continue;}if(model.slot.pose==='lie'&&model.mode==='seated'){v.copy(headPoint(model.slot));v.y+=model.root.scale.x*.42;}else{v.copy(model.root.position);v.y+=model.root.scale.x*1.32;}if(description.fit==='contain')v.y+=camera.top*2/Math.max(1,field.clientHeight)*17;v.multiply(model.group.scale).add(model.group.position);v.project(camera);positions.set(id,{x:(v.x+1)*50,y:(1-v.y)*50,scale:T.MathUtils.clamp(.55+model.root.scale.x/150,.85,1.15),visible:true});}onOverlay(positions);}
    if(DEBUG&&now-(debugAt||0)>400){debugAt=now;drawDebug();}
    post.uniforms.time.value=time;
-   renderer.setRenderTarget(target);renderer.setClearColor(0,0);renderer.clear();renderer.render(world,camera);renderer.setRenderTarget(null);renderer.render(postScene,postCamera);
+   renderer.setRenderTarget(target);renderer.setClearColor(0,0);renderer.clear();renderer.render(world,camera);renderer.setRenderTarget(null);renderer.render(postScene,postCamera);field.dataset.renderedScene=description.id||description.title;
   }
   frame=requestAnimationFrame(tick);
  }
  return{
   scene(value){
-   description=value;dressing=value.dressing||{};generation++;sceneReady=false;renderer.domElement.style.visibility='hidden';field.style.backgroundImage=`url("${value.background}")`;
+   description=value;delete field.dataset.renderedScene;dressing=value.dressing||{};generation++;sceneReady=false;renderer.domElement.style.visibility='hidden';field.style.backgroundImage=`url("${value.background}")`;
    fitCamera();foreground.replaceChildren();
    for(const model of models.values())disposeModel(model);models.clear();for(const model of leaving)disposeModel(model);leaving.length=0;
    this.fresh=true;buildScene(value,generation).catch(error=>console.warn('쉼터 장면 준비 실패',error));

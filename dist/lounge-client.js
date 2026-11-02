@@ -2,7 +2,7 @@ import {initializeApp,getApps} from 'https://www.gstatic.com/firebasejs/13.1.0/f
 import {initializeAuth,inMemoryPersistence,signInAnonymously} from 'https://www.gstatic.com/firebasejs/13.1.0/firebase-auth.js';
 import {getDatabase,ref,get,onValue,onDisconnect,runTransaction,remove,update,serverTimestamp,goOffline,goOnline} from 'https://www.gstatic.com/firebasejs/13.1.0/firebase-database.js';
 import {LOUNGE_FIREBASE} from './lounge-config.js';
-import {sceneFor,parseRoom,LOUNGE_NAMESPACE} from './lounge-scenes.js?v=rest-2';
+import {sceneFor,parseRoom,LOUNGE_NAMESPACE} from './lounge-scenes.js?v=rest-3';
 
 export function createLoungeClient(changed){
  const app=getApps().find(a=>a.name==='lounge')||initializeApp(LOUNGE_FIREBASE,'lounge');

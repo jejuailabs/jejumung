@@ -1,0 +1,41 @@
+{
+ "scene": "pine",
+ "source": "pine.webp",
+ "sourceSize": [
+  1086,
+  1448
+ ],
+ "size": [
+  1086,
+  1448
+ ],
+ "bands": [
+  0.72,
+  0.5
+ ],
+ "parallax": [
+  1.0,
+  0.7,
+  0.45
+ ],
+ "sway": [
+  0.6,
+  0.2
+ ],
+ "horizon": 0.2,
+ "upscale": "native",
+ "depth": "depth-anything-v2-small",
+ "coverage": {
+  "near": 0.03,
+  "mid": 0.03,
+  "water": 0.069,
+  "foliage": 0.131
+ },
+ "bytes": {
+  "depth.png": 56878,
+  "far.jpg": 761967,
+  "mid.webp": 50790,
+  "motion.png": 683021,
+  "near.webp": 32874
+ }
+}

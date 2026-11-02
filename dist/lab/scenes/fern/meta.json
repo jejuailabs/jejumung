@@ -1,0 +1,41 @@
+{
+ "scene": "fern",
+ "source": "fern.webp",
+ "sourceSize": [
+  1086,
+  1448
+ ],
+ "size": [
+  1086,
+  1448
+ ],
+ "bands": [
+  0.72,
+  0.5
+ ],
+ "parallax": [
+  1.0,
+  0.7,
+  0.45
+ ],
+ "sway": [
+  0.6,
+  0.2
+ ],
+ "horizon": null,
+ "upscale": "native",
+ "depth": "depth-anything-v2-small",
+ "coverage": {
+  "near": 0.191,
+  "mid": 0.194,
+  "water": 0.0,
+  "foliage": 0.359
+ },
+ "bytes": {
+  "depth.png": 78283,
+  "far.jpg": 469511,
+  "mid.webp": 225836,
+  "motion.png": 677381,
+  "near.webp": 176970
+ }
+}

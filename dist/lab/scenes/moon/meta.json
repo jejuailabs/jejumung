@@ -1,0 +1,41 @@
+{
+ "scene": "moon",
+ "source": "moon.webp",
+ "sourceSize": [
+  1086,
+  1448
+ ],
+ "size": [
+  1086,
+  1448
+ ],
+ "bands": [
+  0.72,
+  0.5
+ ],
+ "parallax": [
+  1.0,
+  0.7,
+  0.45
+ ],
+ "sway": [
+  0.6,
+  0.2
+ ],
+ "horizon": 0.3,
+ "upscale": "native",
+ "depth": "depth-anything-v2-small",
+ "coverage": {
+  "near": 0.107,
+  "mid": 0.156,
+  "water": 0.003,
+  "foliage": 0.06
+ },
+ "bytes": {
+  "depth.png": 57999,
+  "far.jpg": 422270,
+  "mid.webp": 147530,
+  "motion.png": 384296,
+  "near.webp": 85578
+ }
+}

@@ -1,0 +1,41 @@
+{
+ "scene": "oreum",
+ "source": "oreum.webp",
+ "sourceSize": [
+  1086,
+  1448
+ ],
+ "size": [
+  1086,
+  1448
+ ],
+ "bands": [
+  0.72,
+  0.5
+ ],
+ "parallax": [
+  1.0,
+  0.7,
+  0.45
+ ],
+ "sway": [
+  0.6,
+  0.2
+ ],
+ "horizon": null,
+ "upscale": "native",
+ "depth": "depth-anything-v2-small",
+ "coverage": {
+  "near": 0.189,
+  "mid": 0.211,
+  "water": 0.0,
+  "foliage": 0.156
+ },
+ "bytes": {
+  "depth.png": 62457,
+  "far.jpg": 414832,
+  "mid.webp": 195746,
+  "motion.png": 565723,
+  "near.webp": 158752
+ }
+}

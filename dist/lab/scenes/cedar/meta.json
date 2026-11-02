@@ -1,0 +1,41 @@
+{
+ "scene": "cedar",
+ "source": "cedar.webp",
+ "sourceSize": [
+  1086,
+  1448
+ ],
+ "size": [
+  1086,
+  1448
+ ],
+ "bands": [
+  0.72,
+  0.5
+ ],
+ "parallax": [
+  1.0,
+  0.7,
+  0.45
+ ],
+ "sway": [
+  0.6,
+  0.2
+ ],
+ "horizon": null,
+ "upscale": "native",
+ "depth": "depth-anything-v2-small",
+ "coverage": {
+  "near": 0.075,
+  "mid": 0.174,
+  "water": 0.0,
+  "foliage": 0.095
+ },
+ "bytes": {
+  "depth.png": 67481,
+  "far.jpg": 525356,
+  "mid.webp": 140818,
+  "motion.png": 316352,
+  "near.webp": 49700
+ }
+}

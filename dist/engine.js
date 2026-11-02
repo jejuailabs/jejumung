@@ -1,4 +1,4 @@
-import { createLounge } from './lounge.js?v=rest-2';
+import { createLounge } from './lounge.js?v=rest-3';
 import { attachMedia } from './media-player.js';
 import * as THREE from './vendor/three.module.js';
 import { CLIPS } from './clips.js';
