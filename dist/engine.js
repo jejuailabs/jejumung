@@ -151,7 +151,9 @@ function createComposite(look){
    col=(col-.5)*contrast+.5+lift;
    float luma=dot(col,vec3(.2126,.7152,.0722));col=mix(vec3(luma),col,saturation);
    vec2 d=(uv-.5)*vec2(resolution.x/resolution.y,1.)*1.2;col*=1.-vignette*smoothstep(.35,1.25,length(d));
-   float n=hash(floor(uv*resolution*.5)+fract(time*7.3)*113.)-.5;col+=n*grain*(1.-luma*.6);
+   // Grain goes on in a gamma-like (square-root) space: added in linear light it is amplified
+   // several times in the shadows by the sRGB encode and crawls in dark grass.
+   float n=hash(floor(uv*resolution*.5)+fract(time*7.3)*113.)-.5;vec3 g=sqrt(max(col,0.))+n*grain*.5;col=g*g;
    gl_FragColor=vec4(max(col,0.),1.);
    #include <colorspace_fragment>
   }`});
@@ -372,6 +374,21 @@ $('charButton').innerHTML=characterIcon(selectedCharacter);
 $('bgmButton').innerHTML=NOTE_ICON;$('bgmButton').addEventListener('click',()=>bgm.toggle());
 bgm.onChange(({on,playing})=>{$('bgmButton').setAttribute('aria-pressed',String(on&&playing));});
 document.addEventListener('jejumong:bgm',()=>bgm.toggle());
+// Fullscreen takes <main>, not the stage, so the lounge (a sibling of the stage) stays inside it.
+// iPhone Safari has no element fullscreen, so the button stays hidden there.
+const FULL_ICON='<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M4 9V4h5M15 4h5v5M20 15v5h-5M9 20H4v-5" stroke="currentColor" stroke-width="2" fill="none" stroke-linecap="round" stroke-linejoin="round"/></svg>';
+const EXIT_ICON='<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M9 4v5H4M20 9h-5V4M15 20v-5h5M4 15h5v5" stroke="currentColor" stroke-width="2" fill="none" stroke-linecap="round" stroke-linejoin="round"/></svg>';
+const fullscreenElement=()=>document.fullscreenElement||document.webkitFullscreenElement;
+function toggleFullscreen(){
+ if(fullscreenElement())(document.exitFullscreen||document.webkitExitFullscreen).call(document);
+ else{const main=document.querySelector('main');const p=(main.requestFullscreen||main.webkitRequestFullscreen).call(main);p?.catch?.(()=>{});}
+}
+function syncFullscreen(){const on=!!fullscreenElement();$('fullscreen').innerHTML=on?EXIT_ICON:FULL_ICON;$('fullscreen').setAttribute('aria-pressed',String(on));$('fullscreen').setAttribute('aria-label',on?'전체화면 끄기':'전체화면');}
+if(document.fullscreenEnabled||document.webkitFullscreenEnabled){
+ $('fullscreen').hidden=false;syncFullscreen();$('fullscreen').addEventListener('click',toggleFullscreen);
+ for(const type of['fullscreenchange','webkitfullscreenchange'])document.addEventListener(type,syncFullscreen);
+ document.addEventListener('keydown',e=>{if(e.code==='KeyF'&&!e.repeat&&!e.ctrlKey&&!e.metaKey&&!e.altKey&&!e.target.matches('input,textarea,[contenteditable=true]'))toggleFullscreen();});
+}
 $('steps').addEventListener('click',()=>audio.setSteps(!audio.steps));
 $('first').addEventListener('click',()=>{firstPerson=!firstPerson;$('first').setAttribute('aria-pressed',String(firstPerson));$('first').textContent=firstPerson?'캐릭터 보기':'1인칭 보기';});
 $('compare').addEventListener('click',()=>{comparing=!comparing;document.body.classList.toggle('compare',comparing);$('compare').setAttribute('aria-pressed',String(comparing));$('compare').textContent=comparing?'합성 화면으로 돌아가기':'원본과 비교';$('sceneLabel').textContent=comparing?'웹용 영상만 표시 · 영상 재생 상태는 유지':`${activeClip.file} · ${activeClip.title}`;});

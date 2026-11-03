@@ -5,6 +5,8 @@ body.game header,body.game footer{display:none}
 body.game main{max-width:none;margin:0;min-height:100svh;display:flex;flex-direction:column;align-items:center;justify-content:center}
 body.game .stage{width:min(100vw,calc(100svh*16/9));min-width:0;max-width:none;margin:0;border:0;border-radius:0;background:#000;box-shadow:0 0 120px #000}
 body.game.lounge-mode main{justify-content:flex-start}
+body.game main:fullscreen{background:#06100f;overflow-y:auto}
+body.game main:-webkit-full-screen{background:#06100f;overflow-y:auto}
 /* Top strip */
 body.game .scene-top{padding:12px 18px;align-items:center;background:linear-gradient(#000a,transparent 90%)}
 .brand-mini{color:#f0f1e6;text-decoration:none;font-size:15px;font-weight:700;letter-spacing:.3px;text-shadow:0 1px 8px #000a}
