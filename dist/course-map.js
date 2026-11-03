@@ -14,7 +14,7 @@ let leaflet=null;
 function loadLeaflet(){
  // Script and both stylesheets must be in before the map measures its container.
  leaflet??=Promise.all([
-  ...['/vendor/leaflet.css','/course-map.css?v=map-2'].map(href=>new Promise(resolve=>{const css=document.createElement('link');css.rel='stylesheet';css.href=href;css.onload=css.onerror=resolve;document.head.append(css);})),
+  ...['/vendor/leaflet.css','/course-map.css?v=map-3'].map(href=>new Promise(resolve=>{const css=document.createElement('link');css.rel='stylesheet';css.href=href;css.onload=css.onerror=resolve;document.head.append(css);})),
   window.L?Promise.resolve():new Promise((resolve,reject)=>{const script=document.createElement('script');script.src='/vendor/leaflet.js';script.onload=resolve;script.onerror=()=>reject(Error('leaflet'));document.head.append(script);})
  ]).then(()=>window.L).catch(e=>{leaflet=null;throw e;});
  return leaflet;
@@ -36,7 +36,10 @@ export function createCourseMap(container,{currentId=null,onPick=null,modal=fals
  container.classList.add('jeju-map');
  container.innerHTML='<div class="jeju-map-canvas" role="group" aria-label="제주 코스 지도"></div><p class="jeju-map-hint" hidden>두 손가락으로 지도를 움직여요</p>';
  const canvas=container.querySelector('.jeju-map-canvas');
- const handle={courses,map:null,refresh(){if(!handle.map)return;handle.map.invalidateSize();if(!fitted)fit();}};
+ // highlight(id): lifts one pin above the others (home cards point at their place on the map).
+ const handle={courses,map:null,refresh(){if(!handle.map)return;handle.map.invalidateSize();if(!fitted)fit();},
+  highlight(id){for(const[cid,marker]of Object.entries(markers)){marker.getElement()?.querySelector('.cm-pin')?.classList.toggle('hl',cid===id);marker.setZIndexOffset(cid===id?2e4:cid===currentId?1000:0);}}};
+ const markers={};
  let fitted=false;
  const fit=()=>{if(!canvas.clientWidth||!handle.map)return;handle.map.fitBounds(ISLAND,{padding:[24,24],animate:false});fitted=true;};
  const pick=id=>{if(onPick)onPick(id);else location.href=`/engine?clip=${id}`;};
@@ -55,7 +58,7 @@ export function createCourseMap(container,{currentId=null,onPick=null,modal=fals
   const scale=compact?.62:1;
   for(const c of courses){
    const current=c.id===currentId;
-   L.marker([c.map.lat,c.map.lon],{keyboard:false,zIndexOffset:current?1000:0,icon:L.divIcon({className:'cm-marker',html:pinHtml(c,current,scale),iconSize:[0,0]})}).addTo(map);
+   markers[c.id]=L.marker([c.map.lat,c.map.lon],{keyboard:false,zIndexOffset:current?1000:0,icon:L.divIcon({className:'cm-marker',html:pinHtml(c,current,scale),iconSize:[0,0]})}).addTo(map);
   }
   const zoomClass=()=>{const z=map.getZoom();canvas.dataset.zoom=z>=11?'near':z>=9.75?'mid':'far';};
   // A card that would leave the map slides back inside it; the leader line follows.

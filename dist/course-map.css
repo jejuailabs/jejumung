@@ -42,3 +42,6 @@
 .jeju-map.compact .cm-card{width:84px;padding-bottom:4px;border-radius:9px}
 .jeju-map.compact .cm-card em{top:3px;left:3px;font-size:9px;padding:1px 5px}
 .jeju-map.compact .cm-card b{font-size:11px;white-space:normal;line-height:1.2}.jeju-map.compact .cm-card small{font-size:9px}.jeju-map.compact .cm-card img{margin-bottom:3px}
+
+.cm-pin.hl .cm-dot{background:#f4d072;transform:scale(1.25)}.cm-pin.hl .cm-card{border-color:#f4d072;box-shadow:0 6px 20px #000a}.cm-pin.hl .cm-leader line{stroke:#f4d072}
+.cm-dot,.cm-card{transition:transform .2s,border-color .2s,box-shadow .2s}
