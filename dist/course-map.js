@@ -61,13 +61,39 @@ export function createCourseMap(container,{currentId=null,onPick=null,modal=fals
    markers[c.id]=L.marker([c.map.lat,c.map.lon],{keyboard:false,zIndexOffset:current?1000:0,icon:L.divIcon({className:'cm-marker',html:pinHtml(c,current,scale),iconSize:[0,0]})}).addTo(map);
   }
   const zoomClass=()=>{const z=map.getZoom();canvas.dataset.zoom=z>=11?'near':z>=9.75?'mid':'far';};
-  // A card that would leave the map slides back inside it; the leader line follows.
+  // A card that would leave the map slides back inside it; the leader line follows. On small
+  // maps the hand-set offsets crowd, so cards that still overlap each other or cover a pin are
+  // pushed apart along their shallower overlap for a few rounds.
   const layoutCards=()=>{
-   const W=canvas.clientWidth,H=canvas.clientHeight;
-   for(const pin of canvas.querySelectorAll('.cm-pin')){
-    const card=pin.querySelector('.cm-card'),line=pin.querySelector('line'),p=map.layerPointToContainerPoint(L.DomUtil.getPosition(pin.parentElement));
-    const w=card.offsetWidth/2+6,h=card.offsetHeight/2+6;let dx=Number(pin.dataset.dx),dy=Number(pin.dataset.dy);
-    dx=Math.round(Math.min(W-w,Math.max(w,p.x+dx))-p.x);dy=Math.round(Math.min(H-h,Math.max(h,p.y+dy))-p.y);
+   const W=canvas.clientWidth,H=canvas.clientHeight,PIN=compact?7:10,GAP=compact?2:6;
+   const items=[...canvas.querySelectorAll('.cm-pin')].map(pin=>{
+    const card=pin.querySelector('.cm-card'),p=map.layerPointToContainerPoint(L.DomUtil.getPosition(pin.parentElement));
+    return {pin,p,w:card.offsetWidth/2+GAP,h:card.offsetHeight/2+GAP,x:p.x+Number(pin.dataset.dx),y:p.y+Number(pin.dataset.dy)};
+   });
+   const clamp=a=>{a.x=Math.min(W-a.w,Math.max(a.w,a.x));a.y=Math.min(H-a.h,Math.max(a.h,a.y));};
+   items.forEach(clamp);
+   for(let round=0;round<150;round++){
+    let moved=false;
+    for(let i=0;i<items.length;i++){
+     const a=items[i];
+     for(let j=i+1;j<items.length;j++){
+      const b=items[j],ox=a.w+b.w-Math.abs(a.x-b.x),oy=a.h+b.h-Math.abs(a.y-b.y);
+      if(ox<=0||oy<=0)continue;
+      if(ox<oy){const s=Math.sign(a.x-b.x)||1;a.x+=s*ox/2;b.x-=s*ox/2;}else{const s=Math.sign(a.y-b.y)||1;a.y+=s*oy/2;b.y-=s*oy/2;}
+      moved=true;
+     }
+     for(const{p}of items){
+      const ox=a.w+PIN-Math.abs(a.x-p.x),oy=a.h+PIN-Math.abs(a.y-p.y);
+      if(ox<=0||oy<=0)continue;
+      if(ox<oy)a.x+=(Math.sign(a.x-p.x)||1)*ox;else a.y+=(Math.sign(a.y-p.y)||1)*oy;
+      moved=true;
+     }
+    }
+    items.forEach(clamp);
+    if(!moved)break;
+   }
+   for(const{pin,p,x,y}of items){
+    const dx=Math.round(x-p.x),dy=Math.round(y-p.y),line=pin.querySelector('line');
     pin.style.setProperty('--dx',dx+'px');pin.style.setProperty('--dy',dy+'px');line.setAttribute('x2',dx);line.setAttribute('y2',dy);
    }
   };
