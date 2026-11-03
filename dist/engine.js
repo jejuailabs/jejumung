@@ -276,7 +276,9 @@ function render(now){
  const playState=video.paused?'paused':'playing';if($('play').dataset.state!==playState){$('play').dataset.state=playState;$('play').innerHTML=video.paused?PLAY_ICON+'<span>걷기</span>':PAUSE_ICON+'<span>멈춤</span>';}requestAnimationFrame(render);
 }
 function showError(text){$('error').hidden=false;$('error').textContent=text;}
-async function start(){audio.unlock();audio.attachVideo(video);if(!entered){entered=true;$('gate').hidden=true;gateStage?.stop();preloadLounge();}if(resting){const wasHeld=held;await setRest(false);held=wasHeld;}$('arrival').hidden=true;if(video.ended||video.currentTime>=video.duration-.03)video.currentTime=0;if(video.paused){walkStartedAt=performance.now();video.playbackRate=BASE_RATE*.62;}try{await video.play();}catch(e){if(e.name==='NotAllowedError'){video.muted=true;try{await video.play();}catch{}const unmute=()=>{if(audio.enabled)video.muted=false;document.removeEventListener('pointerdown',unmute);document.removeEventListener('keydown',unmute);};document.addEventListener('pointerdown',unmute);document.addEventListener('keydown',unmute);}else if(e.name!=='AbortError')showError('영상 재생에 실패했어요. 화면을 한 번 누른 뒤 다시 시도해 주세요.');}}
+// Visitor counts for /admin (stats.js listens; nothing here waits on it).
+const stat=type=>dispatchEvent(new CustomEvent('jejumong:stat',{detail:{type}}));
+async function start(){audio.unlock();audio.attachVideo(video);if(!entered){entered=true;$('gate').hidden=true;gateStage?.stop();preloadLounge();stat('play');}if(resting){const wasHeld=held;await setRest(false);held=wasHeld;}$('arrival').hidden=true;if(video.ended||video.currentTime>=video.duration-.03){video.currentTime=0;stat('play');}if(video.paused){walkStartedAt=performance.now();video.playbackRate=BASE_RATE*.62;}try{await video.play();}catch(e){if(e.name==='NotAllowedError'){video.muted=true;try{await video.play();}catch{}const unmute=()=>{if(audio.enabled)video.muted=false;document.removeEventListener('pointerdown',unmute);document.removeEventListener('keydown',unmute);};document.addEventListener('pointerdown',unmute);document.addEventListener('keydown',unmute);}else if(e.name!=='AbortError')showError('영상 재생에 실패했어요. 화면을 한 번 누른 뒤 다시 시도해 주세요.');}}
 function pause(){held=false;video.pause();}
 function resolvedSpot(){const spot=spots[restSpot];return{...spot,...spot.poses?.[restPose]};}
 function setRestScene(sceneId){
@@ -337,6 +339,7 @@ function applyRest(value){
  resting=value;pause();keys.clear();comparing=false;document.body.classList.remove('compare','forest-mode');document.body.classList.toggle('lounge-mode',value);
  $('stage').hidden=value;$('walkPanel').hidden=value;$('lounge').hidden=!value;$('arrival').hidden=true;
  $('compare').setAttribute('aria-pressed','false');$('compare').textContent='원본과 비교';
+ stat(value?'lounge':'walk');
  if(value){$('mediaNotice').hidden=true;lounge.enter({area:isCoast?'coast':'forest',traveler:selectedCharacter,requestedRoom:new URLSearchParams(location.search).get('room')});}
  else{lounge.leave();video.currentTime=savedWalkTime;$('help').textContent=walkHelp;}
 }
@@ -377,7 +380,7 @@ $('volume').addEventListener('input',()=>audio.setVolume(Number($('volume').valu
 audio.onChange(({enabled,volume,steps})=>{$('steps').setAttribute('aria-pressed',String(steps));$('steps').textContent=steps?'발소리 켬':'발소리 끔';$('sound').setAttribute('aria-pressed',String(enabled));$('sound').textContent=enabled?'소리 켬':'소리 끔';$('volume').value=String(volume);$('volume').disabled=!enabled;});
 $('timeline').addEventListener('input',()=>{video.currentTime=Number($('timeline').value);$('arrival').hidden=true;});
 $('wave').addEventListener('click',()=>{waveUntil=performance.now()+2300;$('speech').hidden=false;$('speech').textContent='반가워요. 잠깐 쉬다 가요.';setTimeout(()=>$('speech').hidden=true,2300);});
-$('again').addEventListener('click',()=>{video.currentTime=0;start();});$('stay').addEventListener('click',()=>setRest(true));
+$('again').addEventListener('click',()=>{video.currentTime=0;stat('play');start();});$('stay').addEventListener('click',()=>setRest(true));
 document.addEventListener('keydown',e=>{if(e.target.matches('input,textarea,[contenteditable=true]'))return;if(resting){if(e.code==='Escape'){e.preventDefault();start();}return;}if(['KeyW','ArrowUp','KeyA','KeyD','ArrowLeft','ArrowRight'].includes(e.code)){e.preventDefault();if(!keys.has(e.code)){keys.add(e.code);if(['KeyW','ArrowUp'].includes(e.code))start();}}if(e.code==='Space'&&!e.repeat&&!e.target.matches('button,a')){e.preventDefault();toggle();}});
 document.addEventListener('keyup',e=>{keys.delete(e.code);if(['KeyW','ArrowUp'].includes(e.code))pause();});
 window.addEventListener('blur',()=>{keys.clear();pause();});document.addEventListener('visibilitychange',()=>{if(document.hidden){keys.clear();pause();}});

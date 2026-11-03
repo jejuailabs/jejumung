@@ -70,3 +70,7 @@ GitHub: `jejuailabs/jejumung`, production branch `main`. Vercel: 2026-11-02에 H
 각 사용자는 최근 5개 메시지를 유지하며, 1.5초 간격을 서버에서 제한합니다. 떠나면 내 메시지를 삭제하며 비정상 종료는 onDisconnect로 정리합니다. 연결 끊김 감지는 지연될 수 있습니다. 공개 익명 쉼터이며 운영자 신고·차단 도구와 대규모 부하 검증은 아직 없습니다.
 
 Three.js r170(MIT), hls.js 1.6.19(Apache 2.0) 라이선스는 `dist/vendor/`에 있습니다. 이번 변경은 기존 풍경과 코드로 만든 모델을 사용하며 새 유료 이미지 생성이나 외부 모델 API 호출은 없습니다.
+
+## 관리자 방문 현황 (2026-11-03)
+
+`/admin`에서 지금 접속 중인 인원, 일별 방문자·페이지뷰, 코스별 재생, 쉼터 입장을 봅니다. `dist/stats.js`가 브라우저마다 익명 계정 하나로 `stats/v1`에 REST로만 기록해(상시 연결 없음) 쉼터의 동시 연결 한도를 쓰지 않습니다. 읽기는 `stats/admins/{uid}`에 등록된 Google 계정만 가능합니다(CLI로 등록). 규칙은 `tools/build-stats-rules.mjs`, 시험은 `npm run test:stats-rules`(로컬 에뮬레이터, Java 21 필요). 기록은 `test-lab/04-results/walk-v7/ADMIN-DASHBOARD.md`.
