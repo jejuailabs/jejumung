@@ -39,7 +39,9 @@
 .cm-card small{font-size:10px;color:#b7ded6;padding:0 6px;white-space:nowrap}
 .cm-card em{position:absolute;top:6px;left:6px;padding:2px 7px;border-radius:9px;background:#f4d072;color:#102527;font-style:normal;font-size:10px;font-weight:700}
 .cm-pin.current .cm-card{border-color:#f4d072}
-.jeju-map.compact .cm-card{width:84px;padding-bottom:4px;border-radius:9px}
+/* Phone maps hold ten-plus cards around a small island, so the photo shrinks to a strip. */
+.jeju-map.compact .cm-card{width:80px;padding-bottom:3px;border-radius:9px}
+.jeju-map.compact .cm-card img{aspect-ratio:12/5}
 .jeju-map.compact .cm-card em{top:3px;left:3px;font-size:9px;padding:1px 5px}
 .jeju-map.compact .cm-card b{font-size:11px;white-space:normal;line-height:1.2}.jeju-map.compact .cm-card small{font-size:9px}.jeju-map.compact .cm-card img{margin-bottom:3px}
 

@@ -14,7 +14,7 @@ let leaflet=null;
 function loadLeaflet(){
  // Script and both stylesheets must be in before the map measures its container.
  leaflet??=Promise.all([
-  ...['/vendor/leaflet.css','/course-map.css?v=map-3'].map(href=>new Promise(resolve=>{const css=document.createElement('link');css.rel='stylesheet';css.href=href;css.onload=css.onerror=resolve;document.head.append(css);})),
+  ...['/vendor/leaflet.css','/course-map.css?v=map-4'].map(href=>new Promise(resolve=>{const css=document.createElement('link');css.rel='stylesheet';css.href=href;css.onload=css.onerror=resolve;document.head.append(css);})),
   window.L?Promise.resolve():new Promise((resolve,reject)=>{const script=document.createElement('script');script.src='/vendor/leaflet.js';script.onload=resolve;script.onerror=()=>reject(Error('leaflet'));document.head.append(script);})
  ]).then(()=>window.L).catch(e=>{leaflet=null;throw e;});
  return leaflet;
@@ -61,37 +61,48 @@ export function createCourseMap(container,{currentId=null,onPick=null,modal=fals
    markers[c.id]=L.marker([c.map.lat,c.map.lon],{keyboard:false,zIndexOffset:current?1000:0,icon:L.divIcon({className:'cm-marker',html:pinHtml(c,current,scale),iconSize:[0,0]})}).addTo(map);
   }
   const zoomClass=()=>{const z=map.getZoom();canvas.dataset.zoom=z>=11?'near':z>=9.75?'mid':'far';};
-  // A card that would leave the map slides back inside it; the leader line follows. On small
-  // maps the hand-set offsets crowd, so cards that still overlap each other or cover a pin are
-  // pushed apart along their shallower overlap for a few rounds.
+  // Cards are placed one by one in clips.js order. A card keeps its hand-set offset (slid back
+  // inside the map) when that spot is clear; otherwise it takes the nearest spot on rings around
+  // its pin that covers no placed card or pin and whose leader runs under no card.
   const layoutCards=()=>{
-   const W=canvas.clientWidth,H=canvas.clientHeight,PIN=compact?7:10,GAP=compact?2:6;
+   const W=canvas.clientWidth,H=canvas.clientHeight,PIN=compact?7:10,GAP=compact?2:6,S=compact?.62:1,CROSS=compact?60:2000;
    const items=[...canvas.querySelectorAll('.cm-pin')].map(pin=>{
-    const card=pin.querySelector('.cm-card'),p=map.layerPointToContainerPoint(L.DomUtil.getPosition(pin.parentElement));
-    return {pin,p,w:card.offsetWidth/2+GAP,h:card.offsetHeight/2+GAP,x:p.x+Number(pin.dataset.dx),y:p.y+Number(pin.dataset.dy)};
+    const card=pin.querySelector('.cm-card');
+    return {pin,p:map.layerPointToContainerPoint(L.DomUtil.getPosition(pin.parentElement)),w:card.offsetWidth/2+GAP,h:card.offsetHeight/2+GAP};
    });
-   const clamp=a=>{a.x=Math.min(W-a.w,Math.max(a.w,a.x));a.y=Math.min(H-a.h,Math.max(a.h,a.y));};
-   items.forEach(clamp);
-   for(let round=0;round<150;round++){
-    let moved=false;
-    for(let i=0;i<items.length;i++){
-     const a=items[i];
-     for(let j=i+1;j<items.length;j++){
-      const b=items[j],ox=a.w+b.w-Math.abs(a.x-b.x),oy=a.h+b.h-Math.abs(a.y-b.y);
-      if(ox<=0||oy<=0)continue;
-      if(ox<oy){const s=Math.sign(a.x-b.x)||1;a.x+=s*ox/2;b.x-=s*ox/2;}else{const s=Math.sign(a.y-b.y)||1;a.y+=s*oy/2;b.y-=s*oy/2;}
-      moved=true;
-     }
-     for(const{p}of items){
-      const ox=a.w+PIN-Math.abs(a.x-p.x),oy=a.h+PIN-Math.abs(a.y-p.y);
-      if(ox<=0||oy<=0)continue;
-      if(ox<oy)a.x+=(Math.sign(a.x-p.x)||1)*ox;else a.y+=(Math.sign(a.y-p.y)||1)*oy;
-      moved=true;
-     }
+   const overlap=(a,b)=>Math.max(0,a.w+b.w-Math.abs(a.x-b.x))*Math.max(0,a.h+b.h-Math.abs(a.y-b.y));
+   // The zoom buttons and the map credit stay uncovered, like the pins.
+   const box=canvas.getBoundingClientRect(),controls=[...canvas.querySelectorAll('.leaflet-control-zoom,.leaflet-control-attribution')].map(el=>{
+    const r=el.getBoundingClientRect();return {x:r.left-box.left+r.width/2,y:r.top-box.top+r.height/2,w:r.width/2,h:r.height/2};
+   });
+   // Liang-Barsky: does the segment p→q pass through box b?
+   const crosses=(p,q,b)=>{
+    let t0=0,t1=1;const dx=q.x-p.x,dy=q.y-p.y;
+    for(const[d,r]of[[-dx,p.x-b.x+b.w],[dx,b.x+b.w-p.x],[-dy,p.y-b.y+b.h],[dy,b.y+b.h-p.y]]){
+     if(!d){if(r<0)return false;continue;}
+     const t=r/d;if(d<0){if(t>t1)return false;t0=Math.max(t0,t);}else{if(t<t0)return false;t1=Math.min(t1,t);}
     }
-    items.forEach(clamp);
-    if(!moved)break;
-   }
+    return true;
+   };
+   const place=(a,others)=>{
+    const hx=a.p.x+Number(a.pin.dataset.dx),hy=a.p.y+Number(a.pin.dataset.dy);
+    let best=null;
+    const consider=(x,y)=>{
+     const c={x:Math.min(W-a.w,Math.max(a.w,x)),y:Math.min(H-a.h,Math.max(a.h,y)),w:a.w,h:a.h};
+     let cost=Math.hypot(c.x-hx,c.y-hy)*.5;
+     for(const b of others){cost+=overlap(c,b)*4;if(crosses(a.p,c,b)||crosses(b.p,b,c))cost+=CROSS;}
+     for(const{p}of items)cost+=overlap(c,{x:p.x,y:p.y,w:PIN,h:PIN})*20;
+     for(const b of controls)cost+=overlap(c,b)*20;
+     if(!best||cost<best.cost)best={...c,cost};
+    };
+    consider(hx,hy);
+    if(best.cost>1)for(let r=60;r<=420;r+=20)for(let k=0;k<24;k++)consider(a.p.x+Math.cos(k*Math.PI/12)*r*S,a.p.y+Math.sin(k*Math.PI/12)*r*S);
+    a.x=best.x;a.y=best.y;
+   };
+   // First pass against the cards placed so far, second against all of them, so a card placed
+   // early can still make room for a later one.
+   items.forEach((a,i)=>place(a,items.slice(0,i)));
+   for(const a of items)place(a,items.filter(b=>b!==a));
    for(const{pin,p,x,y}of items){
     const dx=Math.round(x-p.x),dy=Math.round(y-p.y),line=pin.querySelector('line');
     pin.style.setProperty('--dx',dx+'px');pin.style.setProperty('--dy',dy+'px');line.setAttribute('x2',dx);line.setAttribute('y2',dy);
