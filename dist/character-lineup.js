@@ -5,7 +5,8 @@ import {CHARACTERS} from './characters.js';
 // The four companions in a row on the home page, all in one renderer. Each idles and looks
 // around on its own clock; the one under the pointer (or the chosen one) turns to the viewer
 // and waves. Frames are drawn only while the row is on screen.
-const SPAN=4.3,HEIGHT=1.62;
+// HEIGHT covers the crown (head top is about 1.7 with the leaf) plus the shadow below the feet.
+const SPAN=4.3,HEIGHT=2.0,CENTER_Y=.82;
 export function createCharacterLineup(container,{selected}={}){
  const renderer=new THREE.WebGLRenderer({alpha:true,antialias:true});renderer.setPixelRatio(Math.min(devicePixelRatio,2));renderer.outputColorSpace=THREE.SRGBColorSpace;renderer.setClearColor(0,0);
  renderer.shadowMap.enabled=true;renderer.shadowMap.type=THREE.PCFSoftShadowMap;container.append(renderer.domElement);
@@ -24,7 +25,7 @@ export function createCharacterLineup(container,{selected}={}){
  const resize=()=>{const r=container.getBoundingClientRect();if(!r.width||!r.height)return;renderer.setSize(r.width,r.height,false);camera.aspect=r.width/r.height;
   // fit the whole row: width decides on a wide strip, height on a narrow one
   const half=Math.tan(THREE.MathUtils.degToRad(camera.fov/2)),d=Math.max(SPAN/camera.aspect,HEIGHT)/(2*half);
-  camera.position.set(0,.95,d);camera.lookAt(0,.6,0);camera.updateProjectionMatrix();};
+  camera.position.set(0,CENTER_Y+.12,d);camera.lookAt(0,CENTER_Y,0);camera.updateProjectionMatrix();};
  const observer=new ResizeObserver(resize);observer.observe(container);
  const seen=new IntersectionObserver(([e])=>{visible=e.isIntersecting;run();});seen.observe(container);
  const onVisibility=()=>run();document.addEventListener('visibilitychange',onVisibility);

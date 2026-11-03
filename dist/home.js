@@ -37,6 +37,6 @@ stage.addEventListener('pointermove',e=>{if(!lineup)return;const r=stage.getBoun
 stage.addEventListener('pointerleave',()=>lineup?.setFocus(null));
 stage.addEventListener('click',e=>{if(!lineup)return;const r=stage.getBoundingClientRect();choose(lineup.idAt((e.clientX-r.left)/r.width));});
 new IntersectionObserver(([e],io)=>{if(!e.isIntersecting)return;io.disconnect();
- import('./character-lineup.js?v=home-1').then(({createCharacterLineup})=>{lineup=createCharacterLineup(stage,{selected:chosen});row.classList.add('live');})
+ import('./character-lineup.js?v=fit-2').then(({createCharacterLineup})=>{lineup=createCharacterLineup(stage,{selected:chosen});row.classList.add('live');})
   .catch(err=>console.warn('캐릭터 3D 미리보기 사용 불가',err));
 },{rootMargin:'240px'}).observe(row);

@@ -6,7 +6,7 @@ import {createCompanion} from './companion.js?v=nature-8';
 export function createCharacterStage(container,{character='stone'}={}){
  const renderer=new THREE.WebGLRenderer({alpha:true,antialias:true});renderer.setPixelRatio(Math.min(devicePixelRatio,2));renderer.outputColorSpace=THREE.SRGBColorSpace;renderer.setClearColor(0,0);
  renderer.shadowMap.enabled=true;renderer.shadowMap.type=THREE.PCFSoftShadowMap;container.append(renderer.domElement);
- const scene=new THREE.Scene(),camera=new THREE.PerspectiveCamera(30,1,.1,20);camera.position.set(0,.95,3.1);camera.lookAt(0,.62,0);
+ const scene=new THREE.Scene(),camera=new THREE.PerspectiveCamera(30,1,.1,20);camera.position.set(0,.98,3.7);camera.lookAt(0,.82,0);
  scene.add(new THREE.HemisphereLight(0xe8f1e6,0x3f5a4c,2.1));
  const key=new THREE.DirectionalLight(0xfff0d8,2.4);key.position.set(1.6,3,2.2);key.castShadow=true;key.shadow.mapSize.set(1024,1024);key.shadow.camera.left=key.shadow.camera.bottom=-1.2;key.shadow.camera.right=key.shadow.camera.top=1.2;key.shadow.camera.near=.5;key.shadow.camera.far=10;key.shadow.radius=4;key.shadow.normalBias=.02;scene.add(key);
  const rim=new THREE.DirectionalLight(0xdbe9ff,1.1);rim.position.set(-1.5,2.2,-2.5);scene.add(rim);
