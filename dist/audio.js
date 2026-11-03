@@ -84,6 +84,9 @@ export function createAudio(){
   if(surface==='dirt'){
    // soil and leaf litter: a handful of tiny grains spread over ~50 ms
    for(let i=0,at=t+.006;i<4;i++,at+=.008+Math.random()*.012)noise(dest,{frequency:(1700+Math.random()*2300)*rate,q:1.4,attack:.002,decay:.01+Math.random()*.02,peak:.05+Math.random()*.07,start:at});
+  }else if(surface==='snow'){
+   // packed snow: a dense, slightly longer crunch of grains (~90 ms) and no wooden knock
+   for(let i=0,at=t+.004;i<9;i++,at+=.006+Math.random()*.008)noise(dest,{frequency:(900+Math.random()*2200)*rate,q:1.1,attack:.002,decay:.012+Math.random()*.02,peak:.04+Math.random()*.06,start:at});
   }else if(surface==='stone'){noise(dest,{filter:'highpass',frequency:2400*rate,q:.7,attack:.001,decay:.018,peak:.1});}
   else{noise(dest,{frequency:210*rate,q:4,attack:.003,decay:.09,peak:.2});noise(dest,{frequency:1100*rate,q:1,attack:.002,decay:.025,peak:.08});}
  }

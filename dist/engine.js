@@ -5,7 +5,7 @@ import { CLIPS, mediaUrl } from './clips.js';
 import { REST_SCENES, COAST_REST_IDS } from './rest-scenes.js';
 import {createCompanion,preloadCompanionAssets} from './companion.js?v=nature-8';
 import {characterFor,characterIcon,mountCharacterPicker} from './characters.js';
-import {createAudio} from './audio.js?v=bgm-2';
+import {createAudio} from './audio.js?v=snow-1';
 import {createBgm,NOTE_ICON} from './bgm.js?v=bgm-2';
 import {createCharacterStage} from './character-stage.js?v=fit-2';
 import {createCourseMap,nextCourse} from './course-map.js?v=map-3';
