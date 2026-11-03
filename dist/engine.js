@@ -153,7 +153,7 @@ function createComposite(look){
    vec2 d=(uv-.5)*vec2(resolution.x/resolution.y,1.)*1.2;col*=1.-vignette*smoothstep(.35,1.25,length(d));
    // Grain goes on in a gamma-like (square-root) space: added in linear light it is amplified
    // several times in the shadows by the sRGB encode and crawls in dark grass.
-   float n=hash(floor(uv*resolution*.5)+fract(time*7.3)*113.)-.5;vec3 g=sqrt(max(col,0.))+n*grain*.5;col=g*g;
+   float n=hash(floor(uv*resolution*.5)+fract(time*7.3)*113.)-.5;vec3 g=sqrt(max(col,0.))+n*grain*.25;col=g*g;
    gl_FragColor=vec4(max(col,0.),1.);
    #include <colorspace_fragment>
   }`});
