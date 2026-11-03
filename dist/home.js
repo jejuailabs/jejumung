@@ -3,14 +3,15 @@ import {createCourseMap} from './course-map.js?v=map-3';
 import {CHARACTERS,characterFor,characterIcon} from './characters.js';
 
 // Home: the map first, then the copy with the four companions, then every course as a card,
-// newest footage first. Cards come from clips.js, so a new course needs no edit here.
+// the most recently added first. Cards come from clips.js, so a new course needs no edit here.
 const $=id=>document.getElementById(id);
 const map=createCourseMap($('homeMap'));
 
 const length=s=>{const t=Math.max(5,Math.round(s/5)*5),m=Math.floor(t/60),r=t%60;return m?`약 ${m}분${r?` ${r}초`:''}`:`약 ${r}초`;};
 const month=d=>d.slice(0,7).replace('-','.');
 const courses=$('courses');
-for(const c of CLIPS.filter(c=>c.card).sort((a,b)=>(b.shot||'').localeCompare(a.shot||''))){
+const order=c=>[c.added||'',CLIPS.indexOf(c)];
+for(const c of CLIPS.filter(c=>c.card).sort((a,b)=>{const[x,i]=order(a),[y,j]=order(b);return y.localeCompare(x)||j-i;})){
  const a=document.createElement('a');a.className='course';a.href=`engine.html?clip=${c.id}`;a.dataset.clip=c.id;
  a.innerHTML=`<div class="photo"><img src="${c.poster}" alt="${c.card.alt}" loading="lazy" decoding="async"><span>${c.card.tag}</span><time datetime="${c.shot}">${month(c.shot)} 촬영</time></div>`+
   `<div class="description"><small>${length(c.duration)} · ${c.card.rest}</small><h2>${c.card.title} <b>↗</b></h2><p>${c.card.desc}</p></div>`;
