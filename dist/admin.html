@@ -1,5 +1,5 @@
 <!doctype html>
-<html lang="ko"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><meta name="robots" content="noindex,nofollow"><meta name="theme-color" content="#101c1e"><link rel="icon" href="data:image/svg+xml,%3Csvg xmlns=%27http://www.w3.org/2000/svg%27 viewBox=%270 0 64 64%27%3E%3Ccircle cx=%2732%27 cy=%2732%27 r=%2730%27 fill=%27%23b7ded6%27/%3E%3Cpath d=%27M2 32h60a30 30 0 0 1-60 0z%27 fill=%27%23102527%27/%3E%3C/svg%3E"><title>제주멍 관리자 · 방문 현황</title><link rel="stylesheet" href="admin.css?v=stats-1"><script type="module" src="admin.js?v=stats-1"></script></head>
+<html lang="ko"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><meta name="robots" content="noindex,nofollow"><meta name="theme-color" content="#101c1e"><link rel="icon" href="data:image/svg+xml,%3Csvg xmlns=%27http://www.w3.org/2000/svg%27 viewBox=%270 0 64 64%27%3E%3Ccircle cx=%2732%27 cy=%2732%27 r=%2730%27 fill=%27%23b7ded6%27/%3E%3Cpath d=%27M2 32h60a30 30 0 0 1-60 0z%27 fill=%27%23102527%27/%3E%3C/svg%3E"><title>제주멍 관리자 · 방문 현황</title><link rel="stylesheet" href="admin.css?v=stats-2"><script type="module" src="admin.js?v=stats-2"></script></head>
 <body><header><a href="/" class="brand">◒ 제주멍</a><span>방문 현황 · 관리자</span><button id="signOut" type="button" hidden>로그아웃</button></header>
 <main>
 <p id="previewBanner" class="banner" hidden>예시 데이터로 그린 화면이에요. 실제 기록이 아닙니다.</p>
@@ -18,6 +18,9 @@
   <section><h2>코스별 재생</h2><table><thead><tr><th>코스</th><th>재생 수</th><th>재생한 사람</th></tr></thead><tbody id="courses"></tbody></table></section>
   <section><h2>날짜별 기록</h2><table><thead><tr><th>날짜</th><th>방문자</th><th>페이지뷰</th><th>재생</th><th>쉼터</th></tr></thead><tbody id="days"></tbody></table></section>
  </div>
+ <section class="youtube" aria-labelledby="ytTitle"><h2 id="ytTitle">풍경 극장 유튜브 연결</h2>
+  <p class="yt-help">유튜브에 올린 풍경 영상 주소를 붙여 넣고 저장하면, 그 풍경은 극장에서 유튜브로 재생돼요(우리 서버 트래픽 없음). 비우고 저장하면 원래 영상으로 돌아가요. 일부공개 영상도 돼요.</p>
+  <ul id="ytList"></ul></section>
  <div class="foot"><label><input type="checkbox" id="optOut"> 이 브라우저에서 들어가는 방문은 집계하지 않기</label><p>날짜는 한국 시간 기준이에요. 방문자는 하루에 같은 브라우저를 한 명으로 세고, 재생은 걷기를 시작하거나 다시 걸은 횟수예요. 광고 차단기나 시크릿 창은 다르게 셀 수 있어요.</p></div>
 </section>
 </main></body></html>

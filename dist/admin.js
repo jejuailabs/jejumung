@@ -2,9 +2,10 @@
 // under stats/admins read it, so this page holds no secret. ?preview=1 draws sample data offline.
 import {initializeApp} from 'https://www.gstatic.com/firebasejs/13.1.0/firebase-app.js';
 import {getAuth,GoogleAuthProvider,signInWithPopup,signInWithRedirect,onAuthStateChanged,signOut} from 'https://www.gstatic.com/firebasejs/13.1.0/firebase-auth.js';
-import {getDatabase,ref,query,orderByKey,startAt,onValue,remove} from 'https://www.gstatic.com/firebasejs/13.1.0/firebase-database.js';
+import {getDatabase,ref,query,orderByKey,startAt,onValue,remove,set} from 'https://www.gstatic.com/firebasejs/13.1.0/firebase-database.js';
 import {LOUNGE_FIREBASE} from './lounge-config.js';
-import {CLIPS} from './clips.js';
+import {CLIPS,SCENIC} from './clips.js';
+import {youtubeId,YOUTUBE_PATH} from './scenic-youtube.js';
 
 const $=id=>document.getElementById(id),LIVE_WINDOW=150000,STALE=1800000;
 const dayKey=(at=Date.now())=>new Date(at+9*3600e3).toISOString().slice(0,10);
@@ -13,6 +14,22 @@ const title=id=>CLIPS.find(c=>c.id===id)?.title||id;
 let span=14,days={},live={},offset=0,stop=[],watchDays=()=>{};
 const preview=new URLSearchParams(location.search).has('preview');
 
+// Scenic YouTube links: one row per spot; `save(spot, id|null)` writes or clears it.
+let ytLinks={},ytSave=null;
+function renderYoutube(){
+ $('ytList').innerHTML=SCENIC.map(s=>{const id=ytLinks[s.id]||'';return`<li data-spot="${s.id}"><img src="${s.poster}" alt=""><div><b>${s.title}</b><small>${s.place}</small></div>
+  <input type="url" inputmode="url" placeholder="https://youtu.be/…" value="${id?'https://youtu.be/'+id:''}" aria-label="${s.title} 유튜브 주소">
+  <button type="button">저장</button><span class="yt-state">${id?`<a href="https://youtu.be/${id}" target="_blank" rel="noopener">연결됨</a>`:'원래 영상'}</span></li>`;}).join('');
+}
+$('ytList').addEventListener('click',async e=>{
+ const b=e.target.closest('button');if(!b)return;const li=b.closest('li'),input=li.querySelector('input'),state=li.querySelector('.yt-state');
+ const text=input.value.trim(),id=text?youtubeId(text):null;
+ if(text&&!id){state.textContent='유튜브 주소가 아니에요';return;}
+ if(!ytSave){state.textContent='예시 화면이라 저장하지 않아요';return;}
+ b.disabled=true;state.textContent='저장 중…';
+ try{await ytSave(li.dataset.spot,id);}catch{state.textContent='저장하지 못했어요';}finally{b.disabled=false;}
+});
+renderYoutube();
 try{$('optOut').checked=localStorage.getItem('jejumong-stats')==='off';}catch{}
 $('optOut').addEventListener('change',e=>{try{e.target.checked?localStorage.setItem('jejumong-stats','off'):localStorage.removeItem('jejumong-stats');}catch{}});
 for(const b of document.querySelectorAll('[data-days]'))b.addEventListener('click',()=>{
@@ -108,7 +125,9 @@ if(preview){
    // Tabs that closed without saying goodbye: clear them so the node stays small.
    const now=Date.now()+offset;for(const[uid,v]of Object.entries(live))if(now-v.at>STALE)remove(ref(db,'stats/v1/live/'+uid)).catch(()=>{});
   },()=>{}));
+  stop.push(onValue(ref(db,YOUTUBE_PATH),s=>{ytLinks=s.val()||{};renderYoutube();},()=>{}));
  };
+ ytSave=(spot,id)=>id?set(ref(db,`${YOUTUBE_PATH}/${spot}`),id):remove(ref(db,`${YOUTUBE_PATH}/${spot}`));
  function denied(){stop.forEach(f=>f());stop=[];showGate('이 계정은 아직 관리자로 등록되지 않았어요.','',auth.currentUser?.uid);}
  onAuthStateChanged(auth,user=>{
   $('signOut').hidden=!user;

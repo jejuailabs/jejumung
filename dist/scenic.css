@@ -37,3 +37,8 @@
 .scenic-acts button:hover,.scenic-acts button:focus-visible{border-color:#f4d072;outline:none}
 .scenic-acts button[aria-pressed=true]{background:#f4d072;color:#102527;border-color:#f4d072}
 @media(max-width:420px){.scenic-acts{gap:3px;padding:4px;margin-left:8px;margin-right:8px}.scenic-acts button{padding:7px 7px;gap:3px;font-size:12px}.scenic-acts button span{font-size:14px}}
+/* YouTube (scenic-youtube.js): drawn a little larger than its box so YouTube's own title and
+   logo fall outside the crop; it takes no clicks. */
+.scenic-youtube{border:0;pointer-events:none;background:#000}
+.scenic>.scenic-youtube{grid-area:1/1;width:100%;height:100%}
+.theater-screen .scenic-youtube{position:absolute;left:50%;top:50%;width:118%;aspect-ratio:16/9;height:auto;transform:translate(-50%,-50%)}

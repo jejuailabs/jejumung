@@ -251,6 +251,17 @@
           }
         }
       }
+    },
+    "scenic": {
+      "v1": {
+        "youtube": {
+          ".read": true,
+          "$spot": {
+            ".write": "auth != null && root.child('stats/admins').child(auth.uid).val() == true",
+            ".validate": "$spot.matches(/^[A-Z0-9_]{1,24}$/) && newData.isString() && newData.val().matches(/^[A-Za-z0-9_-]{11}$/)"
+          }
+        }
+      }
     }
   }
 }

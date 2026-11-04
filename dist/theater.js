@@ -12,7 +12,9 @@ const LAYOUTS={
 
 // `screen` reaches a pixel or two past the green (tall) or the baked picture (wide) so no edge of
 // it shows; `seat` is where the companion's seat touches the cushion, `seated` its height there.
-export function createTheater(container,video,{character='stone'}={}){
+// `video` is our <video> or a YouTube iframe; an iframe can't be read, so its light comes from
+// the poster.
+export function createTheater(container,video,{character='stone',poster=null}={}){
  const stage=document.createElement('div');stage.className='theater-stage';
  const photo=document.createElement('img');photo.className='theater-photo';photo.alt='';photo.decoding='async';
  const screen=document.createElement('div');screen.className='theater-screen';
@@ -118,9 +120,11 @@ export function createTheater(container,video,{character='stone'}={}){
  // Sample the screen a few times a second for the light it throws on the companion.
  const probe=document.createElement('canvas');probe.width=probe.height=4;const pg=probe.getContext('2d',{willReadFrequently:true});
  let probeAt=0;const tint=new THREE.Color(0xcfe0ff);
+ const posterImage=video.tagName==='VIDEO'||!poster?null:Object.assign(new Image(),{src:poster});
  function sample(now){
-  if(now<probeAt||video.readyState<2)return;probeAt=now+400;
-  try{pg.drawImage(video,0,0,4,4);const d=pg.getImageData(0,0,4,4).data;let r=0,g=0,b=0;for(let i=0;i<d.length;i+=4){r+=d[i];g+=d[i+1];b+=d[i+2];}
+  const source=video.tagName==='VIDEO'?video:posterImage;
+  if(now<probeAt||!source||(source===video?video.readyState<2:!posterImage.complete))return;probeAt=source===video?now+400:Infinity;
+  try{pg.drawImage(source,0,0,4,4);const d=pg.getImageData(0,0,4,4).data;let r=0,g=0,b=0;for(let i=0;i<d.length;i+=4){r+=d[i];g+=d[i+1];b+=d[i+2];}
    tint.setRGB(r/16/255,g/16/255,b/16/255,THREE.SRGBColorSpace);
    glow.style.setProperty('--glow',`rgb(${Math.round(r/16)},${Math.round(g/16)},${Math.round(b/16)})`);
   }catch{} // a tainted frame (no CORS) keeps the last colour

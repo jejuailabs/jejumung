@@ -1,6 +1,7 @@
 import {SCENIC,mediaUrl} from './clips.js';
 import {attachMedia} from './media-player.js';
 import {characterFor} from './characters.js';
+import {youtubeId,youtubeLinks,youtubeFrame} from './scenic-youtube.js';
 
 // Scenic spots (clips.js SCENIC): a looping landscape clip over the walk stage or the whole page,
 // with the place, a line from the companion and a button back. Videos are short and silent; the
@@ -16,7 +17,7 @@ function loadHls(){
 }
 let css=null;
 function loadCss(){
- css??=new Promise(resolve=>{const l=document.createElement('link');l.rel='stylesheet';l.href='/scenic.css?v=scenic-7';l.onload=l.onerror=resolve;document.head.append(l);});
+ css??=new Promise(resolve=>{const l=document.createElement('link');l.rel='stylesheet';l.href='/scenic.css?v=scenic-8';l.onload=l.onerror=resolve;document.head.append(l);});
  return css;
 }
 export const scenicSpot=id=>SCENIC.find(s=>s.id===id);
@@ -28,7 +29,10 @@ const ACTS=[['eat','🍿','팝콘'],['drink','🥤','콜라'],['clap','👏','�
 // none). Resolves when the viewer closes.
 export async function openScenic(id,{root=document.body,back='닫기',character=null}={}){
  const spot=scenicSpot(id);if(!spot)return;
- await loadCss();
+ // A YouTube video set for the spot (admin page, else clips.js) plays instead of our HLS; the
+ // list is read once per page, and a slow answer falls back to our own copy.
+ const [,links]=await Promise.all([loadCss(),Promise.race([youtubeLinks(),new Promise(r=>setTimeout(()=>r({}),1500))])]);
+ const yt=youtubeId(links[spot.id])||youtubeId(spot.youtube);
  const el=document.createElement('div');
  el.className='scenic';el.style.setProperty('--poster',`url('${spot.poster}')`);el.setAttribute('role','dialog');el.setAttribute('aria-label',`${spot.title} 풍경`);
  el.innerHTML=`<video muted playsinline loop autoplay preload="auto" crossorigin="anonymous" poster="${spot.poster}" aria-hidden="true"></video>
@@ -38,12 +42,14 @@ export async function openScenic(id,{root=document.body,back='닫기',character=
  root.append(el);
  // Over the whole page the page underneath stops scrolling while the view is up.
  const lock=root===document.body;if(lock)document.documentElement.style.overflow='hidden';
- const video=el.querySelector('video'),button=el.querySelector('.scenic-back');
+ let video=el.querySelector('video');const button=el.querySelector('.scenic-back');
+ if(yt){const frame=youtubeFrame(yt);video.replaceWith(frame);video=frame;}
  requestAnimationFrame(()=>el.classList.add('on'));
  button.focus({preventScroll:true});
  const lineTimer=setTimeout(()=>{el.querySelector('.scenic-line').hidden=false;},1800);
  let player=null;
- loadHls().then(()=>{player=attachMedia(video,mediaUrl(spot.src),()=>{el.querySelector('.scenic-error').hidden=false;});video.play().catch(()=>{});})
+ const play=()=>{if(!yt)video.play().catch(()=>{});};
+ if(!yt)loadHls().then(()=>{player=attachMedia(video,mediaUrl(spot.src),()=>{el.querySelector('.scenic-error').hidden=false;});play();})
   .catch(()=>{el.querySelector('.scenic-error').hidden=false;});
  let theater=null,stored='theater';try{stored=localStorage.getItem('jejumong-scenic-view')||'theater';}catch{}
  if(!character){try{character=localStorage.getItem('jejumong-character');}catch{}}
@@ -52,10 +58,10 @@ export async function openScenic(id,{root=document.body,back='닫기',character=
   el.classList.toggle('theater',view==='theater');mode.textContent=view==='theater'?'화면 가득 보기':'극장에서 보기';
   if(view==='theater'&&!theater){
    const box=document.createElement('div');box.className='scenic-theater';el.insertBefore(box,el.querySelector('.scenic-top'));
-   const {createTheater}=await import('./theater.js?v=theater-16');
-   theater=createTheater(box,video,{character:characterFor(character).id});
+   const {createTheater}=await import('./theater.js?v=theater-17');
+   theater=createTheater(box,video,{character:characterFor(character).id,poster:spot.poster});
   }else if(view!=='theater'&&theater){theater.dispose();el.querySelector('.scenic-theater').remove();theater=null;el.prepend(video);}
-  video.play().catch(()=>{});
+  play();
  }
  // Action buttons: the line in the bubble follows what the companion does.
  const line=el.querySelector('.scenic-line'),acts=[...el.querySelectorAll('[data-act]')];
@@ -73,7 +79,8 @@ export async function openScenic(id,{root=document.body,back='닫기',character=
   const close=()=>{
    if(closed)return;closed=true;
    clearTimeout(lineTimer);clearInterval(actsTimer);removeEventListener('keydown',onKey,true);
-   theater?.dispose();player?.destroy();video.pause();video.removeAttribute('src');video.load();
+   theater?.dispose();player?.destroy();
+   if(yt)video.remove();else{video.pause();video.removeAttribute('src');video.load();}
    if(lock)document.documentElement.style.overflow='';
    el.classList.remove('on');setTimeout(()=>el.remove(),350);resolve();
   };
