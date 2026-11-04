@@ -139,7 +139,7 @@ export function createCompanion(T,{character='stone'}={}){
   const s=(cycle-STANCE)/(1-STANCE),ease=s*s*(3-2*s);
   return{z:amplitude*(-1+2*ease),y:FOOT+LIFT*Math.sin(Math.PI*s),pitch:.35*Math.sin(Math.PI*s)*(1-s)-.12*s*s*s};
  }
- function update({dt,time,walkTime=0,walking=false,pose='walk',profile='forest',wave=false,distance,speed,lookAt=0}){
+ function update({dt,time,walkTime=0,walking=false,pose='walk',profile='forest',wave=false,act=null,distance,speed,lookAt=0}){
   poseError=0;dt=Math.max(1e-4,dt);
   if(lastTime===null)lastTime=time;
   const resting=pose!=='walk',lying=pose==='lie',sitting=pose==='sit';
@@ -223,6 +223,8 @@ export function createCompanion(T,{character='stone'}={}){
    neckAngles=[.09+breath*.008,.20+Math.sin(time*.21)*.035,-.065];
    shoulders=[[-.10,0,.35],[-.13,0,-.35]];elbows=[[-.80,0,.08],[-.75,0,-.08]];
    hips=[[-1.50,0,-.03],[-1.48,0,.03]];knees=[[1.52,0,0],[1.50,0,0]];ankles=[[0,0,0],[0,0,0]];
+   // On a floor cushion the legs stretch out in front instead of hanging over a seat edge.
+   if(profile==='floor'){chestAngles=[.05,0,-.02];knees=[[.06,0,0],[.02,0,0]];ankles=[[-.45,0,0],[-.40,0,0]];hips=[[-1.56,0,-.12],[-1.54,0,.12]];}
    if(board){
     hips=boardLegs.map(leg=>leg.hip);knees=boardLegs.map(leg=>leg.knee);ankles=boardLegs.map(leg=>leg.ankle);
     shoulders=[[-.22,0,.12],[-.22,0,-.12]];elbows=[[-.90,0,.08],[-.90,0,-.08]];
@@ -245,6 +247,31 @@ export function createCompanion(T,{character='stone'}={}){
    else if(variation==='shift'){chestAngles=[chestAngles[0]-.03*e,chestAngles[1]+variationDir*.08*e,chestAngles[2]+variationDir*.05*e];}
    else if(variation==='stretch'&&sitting){shoulders=[[shoulders[0][0]-2.1*e,0,shoulders[0][2]-.35*e],[shoulders[1][0]-2.1*e,0,shoulders[1][2]+.35*e]];elbows=[[elbows[0][0]*(1-e)-.15*e,0,0],[elbows[1][0]*(1-e)-.15*e,0,0]];chestAngles=[chestAngles[0]-.14*e,chestAngles[1],chestAngles[2]];neckAngles=[neckAngles[0]-.12*e,neckAngles[1],neckAngles[2]];}
    else if(variation==='stretch'&&lying){neckAngles=[neckAngles[0]-.05*e,neckAngles[1]+variationDir*.25*e,neckAngles[2]];knees[1]=[knees[1][0]+.35*e,0,0];hips[1]=[hips[1][0]-.25*e,0,hips[1][2]];}
+  }
+  // Theater actions (theater.js), over the floor sit: `act` is {name, t} with t seconds since it began.
+  if(act&&sitting){
+   const t=act.t,ease=x=>x<0?0:x>1?1:x*x*(3-2*x);
+   if(act.name==='eat'){
+    // The bucket stands by the right hip; the right hand dips into it and goes up to the mouth.
+    const c=(t%2)/2,up=c<.35?ease(c/.35):c<.7?1:1-ease((c-.7)/.3),chew=c>.35&&c<.75?Math.sin((c-.35)*40)*.03:0;
+    shoulders[0]=[-.62,0,.28];elbows[0]=[-1.05,0,.45];
+    shoulders[1]=[-.15-2.15*up,0,.30-.85*up];elbows[1]=[-.45-1.35*up,0,-.30*up];
+    neckAngles=[neckAngles[0]-.05*up+chew,neckAngles[1]*.3,neckAngles[2]*.3];
+   }else if(act.name==='drink'){
+    // The cup comes up to the mouth and tips; the head tilts back to sip.
+    const c=(t%3.2)/3.2,up=c<.25?ease(c/.25):c<.75?1:1-ease((c-.75)/.25);
+    shoulders[1]=[-.45-.95*up,0,-.20-.20*up];elbows[1]=[-.80-.80*up,0,-.20*up];
+    shoulders[0]=[-.12,0,.32];elbows[0]=[-.75,0,.06];
+    neckAngles=[neckAngles[0]-.16*up,neckAngles[1]*.3,neckAngles[2]*.3];chestAngles=[chestAngles[0]-.05*up,chestAngles[1],chestAngles[2]];
+   }else if(act.name==='clap'){
+    const k=Math.abs(Math.sin(t*9))*.18;
+    shoulders=[[-1.05,0,.50-k],[-1.05,0,-.50+k]];elbows=[[-.85,0,0],[-.85,0,0]];
+    neckAngles=[neckAngles[0]+.04*Math.sin(t*9),neckAngles[1]*.3,neckAngles[2]];
+   }else if(act.name==='recline'){
+    // Leaning back on both hands to watch.
+    chestAngles=[-.42,0,0];neckAngles=[.30,neckAngles[1]*.5,0];
+    shoulders=[[.95,0,.42],[.95,0,-.42]];elbows=[[-.10,0,0],[-.10,0,0]];
+   }
   }
   if(wave&&!lying){shoulders[1]=[-.1,0,2.25+Math.sin(time*12)*.12];elbows[1]=[-.25,0,.38+Math.sin(time*12)*.20];neckAngles=[-.04,-.10,-.04];}
   const quick=resting?8:40,legSpeed=resting?10:60;
@@ -308,5 +335,7 @@ export function createCompanion(T,{character='stone'}={}){
   }).catch(()=>{});
  }
  setCharacter(character);
- return{root,update,setCharacter,setEnvIntensity(value){envIntensity=value;applyEnv();},ready:true,kind:'companion',seatHeight:.365};
+ return{root,update,setCharacter,setEnvIntensity(value){envIntensity=value;applyEnv();},ready:true,kind:'companion',seatHeight:.365,
+  // Forearm joints, for props held in a hand (the hand sits at about y -.23 in the joint).
+  hands:[arms[0].elbow,arms[1].elbow]};
 }

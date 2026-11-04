@@ -3,13 +3,13 @@ import { attachMedia } from './media-player.js';
 import * as THREE from './vendor/three.module.js';
 import { CLIPS, mediaUrl } from './clips.js';
 import { REST_SCENES, COAST_REST_IDS } from './rest-scenes.js';
-import {createCompanion,preloadCompanionAssets} from './companion.js?v=nature-8';
+import {createCompanion,preloadCompanionAssets} from './companion.js?v=nature-12';
 import {characterFor,characterIcon,mountCharacterPicker} from './characters.js';
 import {createAudio} from './audio.js?v=snow-1';
 import {createBgm,NOTE_ICON} from './bgm.js?v=bgm-2';
 import {createCharacterStage} from './character-stage.js?v=fit-2';
-import {createCourseMap,nextCourse} from './course-map.js?v=map-9';
-import {openScenic,scenicSpot} from './scenic-player.js?v=scenic-3';
+import {createCourseMap,nextCourse} from './course-map.js?v=map-24';
+import {openScenic,scenicSpot} from './scenic-player.js?v=scenic-19';
 
 const $ = id => document.getElementById(id), video = $('source');
 const PLAY_ICON='<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M8 5.5v13l10.5-6.5z" fill="currentColor"/></svg>',PAUSE_ICON='<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M7 5h3.5v14H7zM13.5 5H17v14h-3.5z" fill="currentColor"/></svg>';
@@ -427,7 +427,7 @@ document.addEventListener('keydown',e=>{if(e.code==='Escape'&&!$('courseMap').hi
 // and goes on from the same place when the viewer closes.
 async function showScenic(id){
  cancelArrival();closeMenus();const walking=entered&&!resting&&!video.paused;pause();
- await openScenic(id,{root:$('stage'),back:walking?'다시 걷기':'돌아가기'});
+ await openScenic(id,{root:$('stage'),back:walking?'다시 걷기':'돌아가기',character:selectedCharacter});
  if(walking)start();
 }
 if(scenicSpot(activeClip.scenic)){$('scenicButton').hidden=false;$('scenicButton').addEventListener('click',()=>showScenic(activeClip.scenic));}

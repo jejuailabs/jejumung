@@ -48,7 +48,7 @@ export function createCourseMap(container,{currentId=null,onPick=null,onScenic=n
  let open=null;
  canvas.addEventListener('click',e=>{
   const spot=e.target.closest('[data-scenic]');
-  if(spot){e.preventDefault();if(onScenic)onScenic(spot.dataset.scenic);else import('./scenic-player.js?v=scenic-3').then(m=>m.openScenic(spot.dataset.scenic));return;}
+  if(spot){e.preventDefault();if(onScenic)onScenic(spot.dataset.scenic);else import('./scenic-player.js?v=scenic-19').then(m=>m.openScenic(spot.dataset.scenic));return;}
   const dot=open&&e.target.closest('.cm-dot');if(dot){e.preventDefault();open(dot.dataset.clip);return;}
   const card=e.target.closest('[data-clip]');if(card){e.preventDefault();pick(card.dataset.clip);}
  });
