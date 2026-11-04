@@ -25,10 +25,20 @@ function link(href,cls,html){const a=document.createElement('a');a.href=href;a.t
 const josa=(n)=>{const c=n.charCodeAt(n.length-1)-0xAC00;return c>=0&&c<11172&&c%28?'은':'는';};
 
 function home(){
- const map=document.querySelector('.map-section');if(!map||document.querySelector('.fj-home'))return;
- const p=document.createElement('p');p.className='fj-home';
- p.append(link(homeUrl('home'),'fj-home-link','<span class="fj-dot"></span>지금 제주 날씨가 궁금하면 · <b>실시간 제주 CCTV 53곳</b> 보기 ↗'));
- map.after(p);
+ if(document.querySelector('.fj-hero'))return;
+ // 1) 헤더 오른쪽: 빛나는 '실시간 CCTV' 버튼
+ const header=document.querySelector('body>header');
+ if(header){const a=link(homeUrl('header'),'fj-head','<span class="fj-dot"></span>실시간 제주 CCTV');header.append(a);}
+ // 2) 지도 바로 위: 첫 화면에서 보이는 큰 띠
+ const map=document.querySelector('.map-section');if(!map)return;
+ const thumbs=['hamdeok','seongsan','hyeopjae'].map(id=>`<img src="${FUNJEJU}/sky/cams/${id}.jpg" alt="" loading="eager">`).join('');
+ const hero=link(homeUrl('home_hero'),'fj-hero',
+  `<span class="fj-hero-thumbs">${thumbs}<span class="fj-hero-live"><span class="fj-dot"></span>LIVE</span></span>`+
+  `<span class="fj-hero-text"><span class="fj-hero-kicker">걷기 전에, 지금 진짜 제주는?</span>`+
+  `<strong>지금 이 순간 제주 바다 · 실시간 CCTV 53곳</strong>`+
+  `<span class="fj-hero-sub">함덕·성산일출봉·협재·한라산 백록담까지, 펀제주에서 바로 보기</span></span>`+
+  `<span class="fj-hero-btn">실시간 CCTV 보기 ↗</span>`);
+ map.before(hero);
 }
 
 function arrivalCard(){
