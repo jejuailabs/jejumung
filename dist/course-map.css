@@ -51,7 +51,8 @@
 .jeju-map.compact .cm-pin.open .cm-dot{transform:scale(1.15)}
 .jeju-map.compact .cm-pin.stacked .cm-dot{display:none}
 .cm-dot i{position:absolute;right:-7px;top:-7px;min-width:17px;height:17px;padding:0 4px;box-sizing:border-box;border-radius:9px;background:#f4d072;color:#102527;font:700 10px/17px system-ui,sans-serif;font-style:normal;box-shadow:0 1px 3px #0008}
-.jeju-map.compact .cm-card{width:124px}.jeju-map.compact .cm-card b{white-space:normal;line-height:1.25}
+.jeju-map.medium .cm-card{width:114px;padding-bottom:5px}.jeju-map.medium .cm-card img{aspect-ratio:2/1;margin-bottom:3px}.jeju-map.medium .cm-card b{font-size:12px;white-space:normal;word-break:keep-all;line-height:1.2}
+.jeju-map.compact .cm-card{width:124px}.jeju-map.compact .cm-card b{white-space:normal;word-break:keep-all;line-height:1.25}
 .jeju-map-tip{display:none;position:absolute;left:50%;top:12px;transform:translateX(-50%);z-index:800;margin:0;padding:5px 12px;border-radius:14px;background:#06100fcc;color:#eef3ea;font-size:12px;white-space:nowrap;pointer-events:none}
 .jeju-map.compact:not(.has-open) .jeju-map-tip{display:block}
 /* Wide maps have no room to spare for it: the legend sits under the map as a caption. */

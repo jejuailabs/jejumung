@@ -33,7 +33,9 @@ export const CLIPS = [
  {id:'REDCINDER',scenic:'DARANGSHI',added:'2026-11-04',shot:'2020-12-11',card:{tag:'송이길',title:'붉은 송이길과 돌담 사이로',desc:'비자림의 이끼 낀 굵은 나무 사이 붉은 화산송이 길을 지나, 높은 현무암 돌담길까지 걸어요.',rest:'숲속 쉼터',alt:'이끼 낀 나무 사이로 굽이 이어지는 붉은 화산송이 길'},title:'비자림 송이길 산책',map:{lat:33.488,lon:126.808,place:'비자림',dx:-140,dy:-100},surface:'dirt',file:'C0342-C0351.MP4',duration:234.433,slow:true,src:'/walk/REDCINDER/2/index.m3u8',stack:.8,poster:'/lab/media/REDCINDER.jpg',path30:'/lab/paths/REDCINDER-slow.json',calibrated:true,
   light:{sun:[-.6,3,-2],sunColor:'#f3efe2',sunIntensity:1.1,fill:[1.5,2,3],fillColor:'#dbe6d4',fillIntensity:.6,shadowOpacity:.22,shadowRadius:5,softness:.95,grain:.035,vignette:.22,contrast:1.03,saturation:1.03,sharpen:.55,envIntensity:.65}},
  {id:'FORESTCAMP',added:'2026-11-04',shot:'2021-10-28',card:{tag:'야영장',title:'삼나무 숲속 야영장을 지나',desc:'햇살 드는 오솔길과 조릿대 길을 지나, 텐트와 평상이 놓인 삼나무 숲을 걸어요.',rest:'숲속 쉼터',alt:'키 큰 나무 사이로 이어지는 햇살 드는 흙 오솔길'},title:'숲속 야영장 산책',map:{lat:33.430,lon:126.558,place:'삼의악 일대',dx:-90,dy:-120},surface:'dirt',file:'20211028_103316-124922.mp4',duration:189.4,slow:true,src:'/walk/FORESTCAMP/2/index.m3u8',stack:.8,poster:'/lab/media/FORESTCAMP.jpg',path30:'/lab/paths/FORESTCAMP-slow.json',calibrated:true,
-  light:{sun:[-1,3.2,-3],sunColor:'#fff1d6',sunIntensity:2,fill:[1.5,2,3],fillColor:'#d8e6d0',fillIntensity:.55,shadowOpacity:.34,shadowRadius:3,softness:.9,grain:.035,vignette:.22,contrast:1.04,saturation:1.05,sharpen:.55,envIntensity:.6}}
+  light:{sun:[-1,3.2,-3],sunColor:'#fff1d6',sunIntensity:2,fill:[1.5,2,3],fillColor:'#d8e6d0',fillIntensity:.55,shadowOpacity:.34,shadowRadius:3,softness:.9,grain:.035,vignette:.22,contrast:1.04,saturation:1.05,sharpen:.55,envIntensity:.6}},
+ {id:'SEOGWANG',scenic:'SEOGWANG',added:'2026-11-04',shot:'2021-10-26',card:{tag:'녹차밭',title:'녹차밭 사이 홀로 선 나무까지',desc:'푸른 녹차밭 이랑 사이 자갈길을 따라, 길 끝에 홀로 선 나무를 향해 걸어요.',rest:'숲속 쉼터',alt:'양옆으로 녹차밭이 펼쳐진 길 끝에 나무 한 그루가 서 있는 풍경'},title:'녹차밭 길 산책',map:{lat:33.3059,lon:126.2951,place:'서광 녹차밭',dx:-120,dy:90},surface:'dirt',file:'20211026_130249-131725.mp4',duration:103.167,slow:true,src:'/walk/SEOGWANG/2/index.m3u8',stack:.8,poster:'/lab/media/SEOGWANG.jpg',path30:'/lab/paths/SEOGWANG-slow.json',calibrated:true,
+  light:{sun:[-1.2,4,-5],sunColor:'#fff4e0',sunIntensity:2.2,fill:[1.5,2,3],fillColor:'#cfe0f5',fillIntensity:.6,shadowOpacity:.4,shadowRadius:3,softness:.85,grain:.03,vignette:.2,contrast:1.04,saturation:1.05,sharpen:.55,envIntensity:.65}}
 ];
 
 // Scenic spots: still or slowly panned landscape clips (test-lab/05-tools/scenic_build.py, silent,
@@ -44,7 +46,7 @@ export const SCENIC=[
  scenic('SAEBYEOL','은빛 억새 비탈','새별오름','바람이 불 때마다 억새가 은빛으로 일렁여요.',{lat:33.3643,lon:126.3597}),
  scenic('JOCHEON','닭머르 정자와 파도','조천 닭머르','파도가 부서지는 소리가 여기까지 들리는 것 같아요.',{lat:33.5503,lon:126.6410}),
  scenic('DARANGSHI','겨울 억새와 둥근 오름','다랑쉬오름','하늘이 정말 파래요. 오름이 동그랗게 보여요.',{lat:33.4776,lon:126.8215}),
- scenic('SEOGWANG','녹차밭과 홀로 선 나무','서광 녹차밭','초록 이랑 끝에 나무 한 그루가 서 있어요.',{lat:33.3059,lon:126.2951}),
+ scenic('SEOGWANG','녹차밭과 홀로 선 나무','서광 녹차밭','초록 이랑 끝에 나무 한 그루가 서 있어요.'),
  scenic('SONGAKSAN','바다 너머 산이 보이는 초원','송악산','풀밭이 바람에 물결처럼 움직여요.',{lat:33.2047,lon:126.2875}),
  scenic('GOSAN','층층 절벽과 검은 모래 해변','수월봉·고산 해안','절벽에 켜켜이 쌓인 줄무늬가 보여요.',{lat:33.3000,lon:126.1640}),
  scenic('JUNGMUN','기둥 절벽과 흰 파도','중문 바닷가','바위 기둥에 파도가 하얗게 부서져요.',{lat:33.2378,lon:126.4254}),

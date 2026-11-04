@@ -8,7 +8,7 @@ import {characterFor,characterIcon,mountCharacterPicker} from './characters.js';
 import {createAudio} from './audio.js?v=snow-1';
 import {createBgm,NOTE_ICON} from './bgm.js?v=bgm-2';
 import {createCharacterStage} from './character-stage.js?v=fit-2';
-import {createCourseMap,nextCourse} from './course-map.js?v=map-8';
+import {createCourseMap,nextCourse} from './course-map.js?v=map-9';
 import {openScenic,scenicSpot} from './scenic-player.js?v=scenic-3';
 
 const $ = id => document.getElementById(id), video = $('source');

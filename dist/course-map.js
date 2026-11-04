@@ -15,7 +15,7 @@ let leaflet=null;
 function loadLeaflet(){
  // Script and both stylesheets must be in before the map measures its container.
  leaflet??=Promise.all([
-  ...['/vendor/leaflet.css','/course-map.css?v=map-8'].map(href=>new Promise(resolve=>{const css=document.createElement('link');css.rel='stylesheet';css.href=href;css.onload=css.onerror=resolve;document.head.append(css);})),
+  ...['/vendor/leaflet.css','/course-map.css?v=map-9'].map(href=>new Promise(resolve=>{const css=document.createElement('link');css.rel='stylesheet';css.href=href;css.onload=css.onerror=resolve;document.head.append(css);})),
   window.L?Promise.resolve():new Promise((resolve,reject)=>{const script=document.createElement('script');script.src='/vendor/leaflet.js';script.onload=resolve;script.onerror=()=>reject(Error('leaflet'));document.head.append(script);})
  ]).then(()=>window.L).catch(e=>{leaflet=null;throw e;});
  return leaflet;
@@ -159,6 +159,8 @@ export function createCourseMap(container,{currentId=null,onPick=null,onScenic=n
   };
   map.on('zoomend',zoomClass);map.on('moveend zoomend resize',layoutCards);
   container.classList.toggle('compact',compact);
+  // Laptop-width maps hold fourteen cards plus the scenic pins only with smaller cards.
+  container.classList.toggle('medium',!compact&&(canvas.clientWidth<1200||canvas.clientHeight<600));
   if(!modal){
    canvas.addEventListener('click',()=>map.scrollWheelZoom.enable(),{once:true});
    if(touch){const hint=container.querySelector('.jeju-map-hint');let timer;canvas.addEventListener('touchstart',e=>{if(e.touches.length===1){hint.hidden=false;clearTimeout(timer);timer=setTimeout(()=>hint.hidden=true,1400);}else hint.hidden=true;},{passive:true});}

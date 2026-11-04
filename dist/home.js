@@ -1,5 +1,5 @@
 import {CLIPS} from './clips.js';
-import {createCourseMap} from './course-map.js?v=map-8';
+import {createCourseMap} from './course-map.js?v=map-9';
 import {CHARACTERS,characterFor,characterIcon} from './characters.js';
 
 // Home: the map first, then the copy with the four companions, then every course as a card,
