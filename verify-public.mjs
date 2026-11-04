@@ -1,6 +1,6 @@
 import {readFile,stat,readdir,access} from 'node:fs/promises';
 import {join} from 'node:path';
-import {CLIPS} from './dist/clips.js';
+import {CLIPS,SCENIC} from './dist/clips.js';
 import {TRAVELERS} from './dist/traveler-assets.js';
 const root=new URL('./dist/',import.meta.url),fail=message=>{throw Error(message)};
 // Walk video is deployed from the sibling media-only project, so a Vercel build of this repo has none of it.
@@ -23,6 +23,16 @@ for(const clip of CLIPS){
  for(const name of playlist.split(/\r?\n/).filter(line=>line&&!line.startsWith('#'))){if(name.includes('..')||name.includes('://'))fail('Unexpected segment reference');await stat(new URL(name,url));}
  console.log(`${clip.id}: ${duration.toFixed(3)} sec, ${durations.length} segments, references OK`);
 }
+for(const spot of SCENIC){
+ if(!/^\/scenic\/[A-Z0-9_]+\/\d+\/index\.m3u8$/.test(spot.src))fail('Scenic video must be a versioned media-project path: '+spot.id);
+ await stat(new URL('.'+spot.poster,root));
+ if(!haveMedia)continue;
+ const url=new URL('.'+spot.src,mediaRoot),playlist=await readFile(url,'utf8');
+ if(!playlist.includes('#EXT-X-ENDLIST'))fail('Incomplete HLS playlist: '+spot.id);
+ for(const name of playlist.split(/\r?\n/).filter(line=>line&&!line.startsWith('#'))){if(name.includes('..')||name.includes('://'))fail('Unexpected segment reference');await stat(new URL(name,url));}
+}
+for(const clip of CLIPS)if(clip.scenic&&!SCENIC.some(s=>s.id===clip.scenic))fail('Unknown scenic spot on '+clip.id);
+console.log(`Scenic spots: ${SCENIC.length}, references OK`);
 console.log(`Public assets: ${files.length} files, ${(files.reduce((a,b)=>a+b.size,0)/1024/1024).toFixed(1)} MiB; all assets below 25 MiB.`);
 let frameCount=0;
 for(const[gender,traveler]of Object.entries(TRAVELERS))for(const[clip,group]of Object.entries(traveler.groups)){

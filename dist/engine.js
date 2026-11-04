@@ -8,7 +8,8 @@ import {characterFor,characterIcon,mountCharacterPicker} from './characters.js';
 import {createAudio} from './audio.js?v=snow-1';
 import {createBgm,NOTE_ICON} from './bgm.js?v=bgm-2';
 import {createCharacterStage} from './character-stage.js?v=fit-2';
-import {createCourseMap,nextCourse} from './course-map.js?v=map-7';
+import {createCourseMap,nextCourse} from './course-map.js?v=map-8';
+import {openScenic,scenicSpot} from './scenic-player.js?v=scenic-3';
 
 const $ = id => document.getElementById(id), video = $('source');
 const PLAY_ICON='<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M8 5.5v13l10.5-6.5z" fill="currentColor"/></svg>',PAUSE_ICON='<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M7 5h3.5v14H7zM13.5 5H17v14h-3.5z" fill="currentColor"/></svg>';
@@ -417,11 +418,19 @@ video.addEventListener('ended',()=>{
 $('nextCourse').addEventListener('click',()=>{cancelArrival();goToCourse((arrivalTarget||nextCourse(activeClip.id)).id,true);});
 for(const id of['again','stay','pickCourse'])$(id).addEventListener('click',cancelArrival);
 let courseMap=null;
-function openMap(){cancelArrival();closeMenus();$('courseMap').hidden=false;if(!courseMap)courseMap=createCourseMap($('courseMapCanvas'),{currentId:activeClip.id,modal:true,onPick:id=>{if(id===activeClip.id){closeMap();return;}goToCourse(id,entered);}});else courseMap.refresh();if(entered&&!resting)pause();}
+function openMap(){cancelArrival();closeMenus();$('courseMap').hidden=false;if(!courseMap)courseMap=createCourseMap($('courseMapCanvas'),{currentId:activeClip.id,modal:true,onPick:id=>{if(id===activeClip.id){closeMap();return;}goToCourse(id,entered);},onScenic:id=>{closeMap();showScenic(id);}});else courseMap.refresh();if(entered&&!resting)pause();}
 function closeMap(){$('courseMap').hidden=true;}
 $('openMap').addEventListener('click',openMap);$('pickCourse').addEventListener('click',openMap);$('closeMap').addEventListener('click',closeMap);
 $('courseMap').addEventListener('click',e=>{if(e.target===$('courseMap'))closeMap();});
 document.addEventListener('keydown',e=>{if(e.code==='Escape'&&!$('courseMap').hidden){e.preventDefault();closeMap();}});
+// A scenic spot near this course (clips.js SCENIC) plays over the stage; the walk waits underneath
+// and goes on from the same place when the viewer closes.
+async function showScenic(id){
+ cancelArrival();closeMenus();const walking=entered&&!resting&&!video.paused;pause();
+ await openScenic(id,{root:$('stage'),back:walking?'다시 걷기':'돌아가기'});
+ if(walking)start();
+}
+if(scenicSpot(activeClip.scenic)){$('scenicButton').hidden=false;$('scenicButton').addEventListener('click',()=>showScenic(activeClip.scenic));}
 video.addEventListener('playing',()=>{walkStartedAt=performance.now();});
 video.addEventListener('loadedmetadata',()=>{
  $('timeline').max=video.duration;

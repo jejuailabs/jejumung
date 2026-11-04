@@ -146,7 +146,7 @@ body.game .arrival{left:50%;right:auto;bottom:auto;top:50%;transform:translate(-
 body.game .arrival button,body.game .arrival .ghost-link{margin:0;padding:9px 14px;font-size:12px;background:var(--glass);border:1px solid var(--glass-border);border-radius:22px;color:#eef3ea}
 body.game .arrival button.primary{background:#d9ead8;color:var(--ink);border-color:#e9f3e5;font-weight:700}
 .course-overlay{position:absolute;inset:0;z-index:9;background:#06100fcc;display:flex;align-items:center;justify-content:center;padding:16px;backdrop-filter:blur(6px)}
-.course-overlay-card{width:min(900px,100%);max-height:100%;overflow:auto;background:#0d1f1cf2;border:1px solid var(--glass-border);border-radius:16px;padding:14px 16px 16px;box-shadow:0 20px 80px #000a}
+.course-overlay-card{width:min(1180px,100%);max-height:100%;overflow:auto;background:#0d1f1cf2;border:1px solid var(--glass-border);border-radius:16px;padding:14px 16px 16px;box-shadow:0 20px 80px #000a}
 .course-overlay-head{display:flex;align-items:center;gap:12px;margin-bottom:10px}
 .course-overlay-head strong{font:18px "Batang",serif;color:#eef3ea}
 .course-overlay-head span{font-size:11px;color:#9fc3b4;flex:1}
@@ -181,3 +181,6 @@ body.game .lounge-heading .ghost-link{padding:8px 12px;font-size:11px}
 .bgm-list li span{font-size:12px}.bgm-list li small{font-size:10px;color:#9fc3b4}
 .bgm-credit{margin:0;padding:8px 14px 10px;font-size:10px;color:#ffffff70;border-top:1px solid #ffffff14}
 body.bgm-on.lounge-mode{padding-bottom:66px}
+/* "풍경 보기" (scenic spot near the course): beside the walk button; on a phone the row has no
+   room, so it floats above the HUD at the right. */
+@media(max-width:520px){.hud #scenicButton{position:absolute;right:12px;bottom:calc(100% + 4px);padding:8px 14px}}

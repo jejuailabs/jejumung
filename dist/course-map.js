@@ -1,9 +1,10 @@
-import {CLIPS} from './clips.js';
+import {CLIPS,SCENIC} from './clips.js';
 
 // Jeju course map: Leaflet over our own basemap tiles (/lab/map/{z}/{x}/{y}.webp), rendered
 // offline from OpenStreetMap coastline, forests and roads plus AWS Terrain Tiles relief by
 // test-lab/05-tools/map_*.py. Pins sit on the clips' shooting GPS; each course card hangs off
 // its pin by a leader line, offset in screen pixels (clips.js map.dx/dy) so it reads at any zoom.
+// Scenic spots (clips.js SCENIC) are small square photo pins that play their view when pressed.
 const TILE_BOUNDS=[[33.064,126.080],[33.651,127.001]];
 // The island plus room for the cards that hang below the south coast and above the north.
 const ISLAND=[[33.11,126.14],[33.61,126.98]];
@@ -14,7 +15,7 @@ let leaflet=null;
 function loadLeaflet(){
  // Script and both stylesheets must be in before the map measures its container.
  leaflet??=Promise.all([
-  ...['/vendor/leaflet.css','/course-map.css?v=map-6'].map(href=>new Promise(resolve=>{const css=document.createElement('link');css.rel='stylesheet';css.href=href;css.onload=css.onerror=resolve;document.head.append(css);})),
+  ...['/vendor/leaflet.css','/course-map.css?v=map-8'].map(href=>new Promise(resolve=>{const css=document.createElement('link');css.rel='stylesheet';css.href=href;css.onload=css.onerror=resolve;document.head.append(css);})),
   window.L?Promise.resolve():new Promise((resolve,reject)=>{const script=document.createElement('script');script.src='/vendor/leaflet.js';script.onload=resolve;script.onerror=()=>reject(Error('leaflet'));document.head.append(script);})
  ]).then(()=>window.L).catch(e=>{leaflet=null;throw e;});
  return leaflet;
@@ -32,10 +33,10 @@ function pinHtml(c,current,scale,compact){
 
 // `modal`: the map owns the gestures (walk overlay). On the home page it stays out of the way
 // of page scrolling until clicked, and touch devices pan with two fingers.
-export function createCourseMap(container,{currentId=null,onPick=null,modal=false}={}){
+export function createCourseMap(container,{currentId=null,onPick=null,onScenic=null,modal=false}={}){
  const courses=CLIPS.filter(c=>c.map);
  container.classList.add('jeju-map');
- container.innerHTML='<div class="jeju-map-canvas" role="group" aria-label="제주 코스 지도"></div><p class="jeju-map-hint" hidden>두 손가락으로 지도를 움직여요</p><p class="jeju-map-tip">핀을 누르면 길이 보여요</p>';
+ container.innerHTML='<div class="jeju-map-canvas" role="group" aria-label="제주 코스 지도"></div><p class="jeju-map-hint" hidden>두 손가락으로 지도를 움직여요</p><p class="jeju-map-tip">둥근 핀은 걷는 길, 네모 핀은 풍경이에요</p>';
  const canvas=container.querySelector('.jeju-map-canvas');
  // highlight(id): lifts one pin above the others (home cards point at their place on the map).
  const handle={courses,map:null,refresh(){if(!handle.map)return;handle.map.invalidateSize();if(!fitted)fit();},
@@ -46,6 +47,8 @@ export function createCourseMap(container,{currentId=null,onPick=null,modal=fals
  const pick=id=>{if(onPick)onPick(id);else location.href=`/engine?clip=${id}`;};
  let open=null;
  canvas.addEventListener('click',e=>{
+  const spot=e.target.closest('[data-scenic]');
+  if(spot){e.preventDefault();if(onScenic)onScenic(spot.dataset.scenic);else import('./scenic-player.js?v=scenic-3').then(m=>m.openScenic(spot.dataset.scenic));return;}
   const dot=open&&e.target.closest('.cm-dot');if(dot){e.preventDefault();open(dot.dataset.clip);return;}
   const card=e.target.closest('[data-clip]');if(card){e.preventDefault();pick(card.dataset.clip);}
  });
@@ -60,6 +63,8 @@ export function createCourseMap(container,{currentId=null,onPick=null,modal=fals
   L.tileLayer('/lab/map/{z}/{x}/{y}.webp',hd?{tileSize:128,zoomOffset:1,minNativeZoom:7,maxNativeZoom:12,bounds:TILE_BOUNDS}:{minNativeZoom:8,maxNativeZoom:13,bounds:TILE_BOUNDS}).addTo(map);
   for(const[name,lon,lat,major]of TOWNS)L.marker([lat,lon],{interactive:false,keyboard:false,icon:L.divIcon({className:`cm-town${major?' major':''}`,html:`<span>${name}</span>`,iconSize:[0,0]})}).addTo(map);
   for(const[name,lon,lat,ele]of PEAKS)L.marker([lat,lon],{interactive:false,keyboard:false,icon:L.divIcon({className:`cm-peak${ele>1900?' major':''}`,html:`<i></i><span>${name}${ele>1900?` <small>${ele}m</small>`:''}</span>`,iconSize:[0,0]})}).addTo(map);
+  for(const s of SCENIC.filter(s=>s.map))L.marker([s.map.lat,s.map.lon],{keyboard:false,zIndexOffset:-500,icon:L.divIcon({className:'cm-marker cm-scenic-marker',
+   html:`<button type="button" class="cm-scenic" data-scenic="${s.id}" aria-label="${s.title} 풍경 보기, ${s.place}" style="--thumb:url('${s.poster}')"><span>${s.place}</span></button>`,iconSize:[0,0]})}).addTo(map);
   const scale=compact?.62:1;
   for(const c of courses){
    const current=c.id===currentId;
@@ -107,14 +112,15 @@ export function createCourseMap(container,{currentId=null,onPick=null,modal=fals
   const layoutCards=()=>{
    const W=canvas.clientWidth,H=canvas.clientHeight,PIN=compact?18:10,GAP=compact?2:6,S=compact?.62:1,CROSS=compact?60:2000;
    const pins=[...canvas.querySelectorAll('.cm-pin')].map(pin=>({pin,p:map.layerPointToContainerPoint(L.DomUtil.getPosition(pin.parentElement))}));
+   const spots=[...canvas.querySelectorAll('.cm-scenic-marker')].map(el=>map.layerPointToContainerPoint(L.DomUtil.getPosition(el)));
    // Phone maps lay out only the cards a tap opened; every pin stays uncovered.
    const items=pins.filter(({pin})=>!compact||pin.classList.contains('open')).map(a=>{
     const card=a.pin.querySelector('.cm-card');
     return {...a,w:card.offsetWidth/2+GAP,h:card.offsetHeight/2+GAP};
    });
    const overlap=(a,b)=>Math.max(0,a.w+b.w-Math.abs(a.x-b.x))*Math.max(0,a.h+b.h-Math.abs(a.y-b.y));
-   // The zoom buttons and the map credit stay uncovered, like the pins.
-   const box=canvas.getBoundingClientRect(),controls=[...canvas.querySelectorAll('.leaflet-control-zoom,.leaflet-control-attribution')].map(el=>{
+   // The zoom buttons, the map credit and the pin legend stay uncovered, like the pins.
+   const box=canvas.getBoundingClientRect(),controls=[...container.querySelectorAll('.leaflet-control-zoom,.leaflet-control-attribution,.jeju-map-tip')].filter(el=>el.offsetWidth).map(el=>{
     const r=el.getBoundingClientRect();return {x:r.left-box.left+r.width/2,y:r.top-box.top+r.height/2,w:r.width/2,h:r.height/2};
    });
    // Liang-Barsky: does the segment p→q pass through box b?
@@ -134,17 +140,18 @@ export function createCourseMap(container,{currentId=null,onPick=null,modal=fals
      let cost=Math.hypot(c.x-hx,c.y-hy)*.5;
      for(const b of others){cost+=overlap(c,b)*4;if(crosses(a.p,c,b)||crosses(b.p,b,c))cost+=CROSS;}
      for(const{p}of pins)cost+=overlap(c,{x:p.x,y:compact?p.y-21:p.y,w:PIN,h:compact?21:PIN})*20; // phone photo pins stand above their spot
+     for(const p of spots)cost+=overlap(c,{x:p.x,y:p.y,w:15,h:15})*20;
      for(const b of controls)cost+=overlap(c,b)*20;
      if(!best||cost<best.cost)best={...c,cost};
     };
     consider(hx,hy);
-    if(best.cost>1)for(let r=60;r<=420;r+=20)for(let k=0;k<24;k++)consider(a.p.x+Math.cos(k*Math.PI/12)*r*S,a.p.y+Math.sin(k*Math.PI/12)*r*S);
+    if(best.cost>1)for(let r=50;r<=440;r+=15)for(let k=0;k<36;k++)consider(a.p.x+Math.cos(k*Math.PI/18)*r*S,a.p.y+Math.sin(k*Math.PI/18)*r*S);
     a.x=best.x;a.y=best.y;
    };
    // First pass against the cards placed so far, second against all of them, so a card placed
    // early can still make room for a later one.
    items.forEach((a,i)=>place(a,items.slice(0,i)));
-   for(const a of items)place(a,items.filter(b=>b!==a));
+   for(let k=0;k<3;k++)for(const a of items)place(a,items.filter(b=>b!==a));
    for(const{pin,p,x,y}of items){
     const dx=Math.round(x-p.x),dy=Math.round(y-p.y),line=pin.querySelector('line');
     pin.style.setProperty('--dx',dx+'px');pin.style.setProperty('--dy',dy+'px');line.setAttribute('x2',dx);line.setAttribute('y2',dy);

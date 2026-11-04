@@ -10,5 +10,5 @@ export function attachMedia(video,src,onError){
    hls.loadSource(src);hls.attachMedia(video);
   }else queueMicrotask(()=>onError('이 브라우저에서 영상을 재생할 수 없습니다. 최신 Safari, Chrome, Edge에서 열어주세요.'));
  }
- load();return{reload:load};
+ load();return{reload:load,destroy(){if(hls){hls.destroy();hls=null;}}};
 }

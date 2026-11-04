@@ -7,7 +7,7 @@ const types={'.html':'text/html; charset=utf-8','.js':'text/javascript','.css':'
 createServer(async(req,res)=>{try{
  const pathname=decodeURIComponent(new URL(req.url,'http://localhost').pathname);
  // Walk video lives in the sibling media project (clips.js mediaUrl keeps it same-origin locally).
- const base=pathname.startsWith('/walk/')?mediaRoot:root;
+ const base=/^\/(walk|scenic)\//.test(pathname)?mediaRoot:root;
  let path=resolve(base,'.'+pathname);
  if(path!==resolve(base)&&!path.startsWith(resolve(base)+sep))throw Error('outside root');
  if(pathname.endsWith('/'))path=resolve(path,'index.html');
