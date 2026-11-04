@@ -1,5 +1,5 @@
 <!doctype html>
-<html lang="ko"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><meta name="robots" content="noindex,nofollow"><meta name="theme-color" content="#101c1e"><link rel="icon" href="data:image/svg+xml,%3Csvg xmlns=%27http://www.w3.org/2000/svg%27 viewBox=%270 0 64 64%27%3E%3Ccircle cx=%2732%27 cy=%2732%27 r=%2730%27 fill=%27%23b7ded6%27/%3E%3Cpath d=%27M2 32h60a30 30 0 0 1-60 0z%27 fill=%27%23102527%27/%3E%3C/svg%3E"><title>제주멍 관리자 · 방문 현황</title><link rel="stylesheet" href="admin.css?v=stats-4"><script type="module" src="admin.js?v=stats-4"></script></head>
+<html lang="ko"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><meta name="robots" content="noindex,nofollow"><meta name="theme-color" content="#101c1e"><link rel="icon" href="data:image/svg+xml,%3Csvg xmlns=%27http://www.w3.org/2000/svg%27 viewBox=%270 0 64 64%27%3E%3Ccircle cx=%2732%27 cy=%2732%27 r=%2730%27 fill=%27%23b7ded6%27/%3E%3Cpath d=%27M2 32h60a30 30 0 0 1-60 0z%27 fill=%27%23102527%27/%3E%3C/svg%3E"><title>제주멍 관리자 · 방문 현황</title><link rel="stylesheet" href="admin.css?v=stats-5"><script type="module" src="admin.js?v=stats-5"></script></head>
 <body><header><a href="/" class="brand">◒ 제주멍</a><span>방문 현황 · 관리자</span><button id="signOut" type="button" hidden>로그아웃</button></header>
 <main>
 <p id="previewBanner" class="banner" hidden>예시 데이터로 그린 화면이에요. 실제 기록이 아닙니다.</p>
@@ -31,7 +31,7 @@
   <p id="fjStatus" class="fj-status" hidden></p>
   <figure class="chart"><figcaption>펀제주 일별 방문자 수</figcaption><div class="plot" id="chartFj"></div><div class="tip" hidden></div></figure>
   <div class="tables">
-   <section><h2>구역별</h2><table><thead><tr><th>구역</th><th>페이지뷰</th><th>방문자 (일별 합)</th><th>평균 체류</th></tr></thead><tbody id="fjSections"></tbody></table></section>
+   <section><h2>구역별</h2><table><thead><tr><th>구역</th><th>페이지뷰</th><th>방문자 (일별 합)</th><th>한 번 볼 때 평균</th></tr></thead><tbody id="fjSections"></tbody></table></section>
    <section><h2>날짜별 기록</h2><table><thead><tr><th>날짜</th><th>방문자</th><th>페이지뷰</th><th>평균 체류</th></tr></thead><tbody id="fjDays"></tbody></table></section>
   </div>
  </div>
@@ -53,6 +53,6 @@
    <p class="yt-help">유튜브에 올린 풍경 영상 주소를 붙여 넣고 저장하면, 그 풍경은 극장에서 유튜브로 재생돼요(우리 서버 트래픽 없음). 비우고 저장하면 원래 영상으로 돌아가요. 일부공개 영상도 돼요.</p>
    <ul id="ytList"></ul></section>
  </div>
- <div class="foot"><label><input type="checkbox" id="optOut"> 이 브라우저에서 들어가는 제주멍 방문은 집계하지 않기</label><p>제주멍 날짜는 한국 시간 기준이에요. 펀제주 날짜는 펀제주 기록 방식대로 세계 표준시(한국 시간 오전 9시에 하루가 바뀜) 기준이라, 전체 탭에서 같은 날짜로 묶을 때 9시간 어긋날 수 있어요. 두 사이트는 방문자 번호가 달라서 양쪽을 다 다녀간 사람은 합계에서 두 번 세요. 방문자는 하루에 같은 브라우저를 한 명으로 세고, 평균 체류는 그날 화면을 앞에 띄워 둔 시간을 방문자 수로 나눈 값이에요(2026년 11월 4일부터 기록, 펀제주는 한 페이지에 최대 30분까지). 재생은 걷기를 시작하거나 다시 걸은 횟수예요. 광고 차단기나 시크릿 창은 다르게 셀 수 있어요.</p></div>
+ <div class="foot"><label><input type="checkbox" id="optOut"> 이 브라우저에서 들어가는 제주멍 방문은 집계하지 않기</label><p>제주멍 날짜는 한국 시간 기준이에요. 펀제주 날짜는 펀제주 기록 방식대로 세계 표준시(한국 시간 오전 9시에 하루가 바뀜) 기준이라, 전체 탭에서 같은 날짜로 묶을 때 9시간 어긋날 수 있어요. 두 사이트는 방문자 번호가 달라서 양쪽을 다 다녀간 사람은 합계에서 두 번 세요. 방문자는 하루에 같은 브라우저를 한 명으로 세고, 평균 체류는 그날 화면을 앞에 띄워 둔 시간을, 그 시간이 기록된 방문자 수로 나눈 값이에요(2026년 11월 4일 저녁부터 기록, 펀제주는 한 페이지에 최대 30분까지). 구역별 '한 번 볼 때 평균'은 그 구역 페이지를 한 번 열었을 때 머문 평균 시간이에요. 재생은 걷기를 시작하거나 다시 걸은 횟수예요. 광고 차단기나 시크릿 창은 다르게 셀 수 있어요.</p></div>
 </section>
 </main></body></html>

@@ -17,8 +17,10 @@ const stats={
     '$uid':{
      '.write':'auth != null && auth.uid == $uid',
      v:step(500),l:step(200),
-     // Minutes the page was in front (stats.js): one per minute, so a day tops out at 1440.
+     // Time the page was in front (stats.js): `s` seconds, at most 90 added per write, a day's worth at most.
+     // `m` (whole minutes) was the first evening's form; kept so those records stay valid.
      m:step(1440),
+     s:{'.validate':'newData.isNumber() && newData.val() > (data.exists() ? data.val() : 0) && newData.val() <= (data.exists() ? data.val() : 0) + 90 && newData.val() <= 86400'},
      p:{'$clip':{'.validate':"$clip.matches(/^[A-Z0-9_]{1,24}$/) && "+step(200)['.validate']}},
      '$other':{'.validate':false}
     }

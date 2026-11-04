@@ -18,7 +18,8 @@ const params=new URLSearchParams(location.search),preview=params.has('preview');
 // A local funjeju dev server can stand in while testing on this machine only.
 const FUNJEJU=(location.hostname==='127.0.0.1'||location.hostname==='localhost')&&params.get('funjeju')||'https://funjeju.com';
 const SITES={funjeju:{label:'펀제주',cls:'fj'},jejumung:{label:'제주멍',cls:'jm'}};
-// Dwell minutes (u.m) are recorded from this day on; earlier days show a dash, not zero.
+// Dwell time is recorded from this day on (u.s seconds; u.m minutes from the first evening); earlier
+// days show a dash. Averages divide by the visitors who left time, not by every visitor that day.
 const DWELL_FROM='2026-11-04';
 let tab='all';try{tab=localStorage.getItem('jejumong-admin-tab')||'all';}catch{}
 // Average time in front per visitor: seconds -> "40초", "3.4분", "1시간 5분"; null -> "—".
@@ -64,7 +65,7 @@ for(const t of tabs){
 }
 selectTab(tab);
 
-// funjeju.com counts: {days:[{date,views,visitors,dwellSec,sections:{key:{views,visitors,dwellSec}}}],
+// funjeju.com counts: {days:[{date,views,visitors,dwellSec,dwellVisitors,sections:{key:{views,visitors,dwellSec,dwellViews}}}],
 // sections:{key:label}, recentVisitors}. Fetched on demand (it costs funjeju reads), kept per range length.
 let fj={byDays:{},state:'idle',error:''},fjToken=null;
 async function loadFunjeju(force){
@@ -84,9 +85,9 @@ const fjData=()=>fj.byDays[span];
 
 // One day node is {uid:{v,l,p:{clip:n}}}; fold it into totals and the set of visitors.
 function summarize(node={},key){
- const s={visitors:0,views:0,plays:0,players:0,lounge:0,dwellSec:key<DWELL_FROM?null:0,courses:{},uids:new Set()};
+ const s={visitors:0,views:0,plays:0,players:0,lounge:0,dwellSec:key<DWELL_FROM?null:0,dwellers:0,courses:{},uids:new Set()};
  for(const[uid,u]of Object.entries(node)){
-  s.uids.add(uid);if(u.v)s.visitors++;s.views+=u.v||0;s.lounge+=u.l||0;if(u.m)s.dwellSec=(s.dwellSec||0)+u.m*60;
+  s.uids.add(uid);if(u.v)s.visitors++;s.views+=u.v||0;s.lounge+=u.l||0;if(u.s||u.m){s.dwellSec=(s.dwellSec||0)+(u.s||0)+(u.m||0)*60;s.dwellers++;}
   const p=Object.entries(u.p||{});if(p.length)s.players++;
   for(const[clip,n]of p){const c=s.courses[clip]||={plays:0,people:0};c.plays+=n;c.people++;s.plays+=n;}
  }
@@ -105,13 +106,13 @@ function renderFjStatus(){
  $('fjReload').disabled=fj.state==='loading';
 }
 const sum=(rows,f)=>rows.reduce((a,r)=>a+(r[f]||0),0);
-const fjRows=()=>(fjData()?.days||[]).map(d=>({key:d.date,visitors:d.visitors,views:d.views,dwellSec:d.dwellSec??null,sections:d.sections}));
+const fjRows=()=>(fjData()?.days||[]).map(d=>({key:d.date,visitors:d.visitors,views:d.views,dwellSec:d.dwellSec??null,dwellers:d.dwellVisitors||0,sections:d.sections}));
 const md=k=>k.slice(5).replace('-','/');
 
 function renderAll(){
  const fjBy=Object.fromEntries(fjRows().map(r=>[r.key,r]));
  const rows=range().map(k=>{const j=summarize(days[k],k),f=fjBy[k]||{};
-  return{key:k,jm:j.visitors,fj:f.visitors||0,jmViews:j.views,fjViews:f.views||0,jmDwell:j.dwellSec,fjDwell:f.dwellSec??null};});
+  return{key:k,jm:j.visitors,fj:f.visitors||0,jmViews:j.views,fjViews:f.views||0,jmDwell:j.dwellSec,fjDwell:f.dwellSec??null,jmDwellers:j.dwellers,fjDwellers:f.dwellers||0};});
  const t=rows.at(-1),jmLive=liveNow().length,fjLive=fjData()?.recentVisitors;
  $('allLive').textContent=fmt(jmLive+(fjLive||0));
  $('allLiveSplit').textContent=`제주멍 ${fmt(jmLive)} · 펀제주 ${fjLive==null?'—':fmt(fjLive)}`;
@@ -119,12 +120,12 @@ function renderAll(){
  pair('allTodayVisitors',t.jm,t.fj);pair('allTodayViews',t.jmViews,t.fjViews);
  pair('allRangeVisitors',sum(rows,'jm'),sum(rows,'fj'));
  // Both sites' time over both sites' visitors, counting only the sites that recorded time that day.
- const both=r=>{const parts=[[r.fjDwell,r.fj],[r.jmDwell,r.jm]].filter(([d])=>d!=null);return parts.length?avg(parts.reduce((a,[d])=>a+d,0),parts.reduce((a,[,n])=>a+n,0)):null;};
+ const both=r=>{const parts=[[r.fjDwell,r.fjDwellers],[r.jmDwell,r.jmDwellers]].filter(([d])=>d!=null);return parts.length?avg(parts.reduce((a,[d])=>a+d,0),parts.reduce((a,[,n])=>a+n,0)):null;};
  $('allTodayDwell').textContent=dur(both(t));
- $('allTodayDwellSplit').textContent=`펀제주 ${dur(avg(t.fjDwell,t.fj))} · 제주멍 ${dur(avg(t.jmDwell,t.jm))}`;
+ $('allTodayDwellSplit').textContent=`펀제주 ${dur(avg(t.fjDwell,t.fjDwellers))} · 제주멍 ${dur(avg(t.jmDwell,t.jmDwellers))}`;
  $('rangeSummary').textContent=`${span}일 동안 방문자(일별 합) ${fmt(sum(rows,'jm')+sum(rows,'fj'))} · 페이지뷰 ${fmt(sum(rows,'jmViews')+sum(rows,'fjViews'))}`;
  chart($('chartAll'),rows,[{key:'fj',...SITES.funjeju},{key:'jm',...SITES.jejumung}],
-  r=>`<span><i class="dot fj"></i>펀제주 방문자 ${fmt(r.fj)} · 평균 ${dur(avg(r.fjDwell,r.fj))}</span><span><i class="dot jm"></i>제주멍 방문자 ${fmt(r.jm)} · 평균 ${dur(avg(r.jmDwell,r.jm))}</span>`);
+  r=>`<span><i class="dot fj"></i>펀제주 방문자 ${fmt(r.fj)} · 평균 ${dur(avg(r.fjDwell,r.fjDwellers))}</span><span><i class="dot jm"></i>제주멍 방문자 ${fmt(r.jm)} · 평균 ${dur(avg(r.jmDwell,r.jmDwellers))}</span>`);
  $('allDays').innerHTML=rows.slice().reverse().map(r=>`<tr><td>${md(r.key)}</td><td>${fmt(r.fj)}</td><td>${fmt(r.jm)}</td><td>${fmt(r.fj+r.jm)}</td><td>${fmt(r.fjViews+r.jmViews)}</td><td>${dur(both(r))}</td></tr>`).join('');
 }
 
@@ -134,18 +135,16 @@ function renderFunjeju(){
  $('fjLive').textContent=d?.recentVisitors==null?'—':fmt(d.recentVisitors);
  $('fjTodayVisitors').textContent=fmt(t.visitors||0);$('fjYVisitors').textContent=`어제 ${fmt(y.visitors||0)}`;
  $('fjTodayViews').textContent=fmt(t.views||0);$('fjYViews').textContent=`어제 ${fmt(y.views||0)}`;
- $('fjTodayDwell').textContent=dur(avg(t.dwellSec,t.visitors));$('fjYDwell').textContent=`어제 ${dur(avg(y.dwellSec,y.visitors))}`;
+ $('fjTodayDwell').textContent=dur(avg(t.dwellSec,t.dwellers));$('fjYDwell').textContent=`어제 ${dur(avg(y.dwellSec,y.dwellers))}`;
  $('fjRangeVisitors').textContent=fmt(sum(rows,'visitors'));$('fjRangeViews').textContent=fmt(sum(rows,'views'));
- const sec={};for(const r of rows)for(const[k,v]of Object.entries(r.sections||{})){const s=sec[k]||={views:0,visitors:0,dwellSec:0};s.views+=v.views;s.visitors+=v.visitors;s.dwellSec+=v.dwellSec||0;}
+ const sec={};for(const r of rows)for(const[k,v]of Object.entries(r.sections||{})){const s=sec[k]||={views:0,visitors:0,dwellSec:0,dwellViews:0};s.views+=v.views;s.visitors+=v.visitors;s.dwellSec+=v.dwellSec||0;s.dwellViews+=v.dwellViews||0;}
  const order=Object.entries(sec).sort((a,b)=>b[1].views-a[1].views),name=k=>labels[k]||k;
- // Section averages only over the days that recorded time, so older days do not dilute them.
- const timed={};for(const r of rows)if(r.dwellSec!=null)for(const[k,v]of Object.entries(r.sections||{}))timed[k]=(timed[k]||0)+v.visitors;
  $('fjTopSection').textContent=order.length?`가장 많이 본 곳 · ${name(order[0][0])}`:'';
  $('rangeSummary').textContent=`${span}일 동안 펀제주 방문자(일별 합) ${fmt(sum(rows,'visitors'))} · 페이지뷰 ${fmt(sum(rows,'views'))}`;
- chart($('chartFj'),rows,[{key:'visitors',...SITES.funjeju}],r=>`<span>방문자 ${fmt(r.visitors)} · 평균 ${dur(avg(r.dwellSec,r.visitors))}</span><span>페이지뷰 ${fmt(r.views)}</span>`);
+ chart($('chartFj'),rows,[{key:'visitors',...SITES.funjeju}],r=>`<span>방문자 ${fmt(r.visitors)} · 평균 ${dur(avg(r.dwellSec,r.dwellers))}</span><span>페이지뷰 ${fmt(r.views)}</span>`);
  const empty=n=>`<tr><td colspan="${n}" class="empty">${fj.state==='ok'?'아직 기록이 없어요':'불러오는 중이에요'}</td></tr>`;
- $('fjSections').innerHTML=order.length?order.map(([k,v])=>`<tr><td>${esc(name(k))}</td><td>${fmt(v.views)}</td><td>${fmt(v.visitors)}</td><td>${dur(timed[k]?v.dwellSec/timed[k]:null)}</td></tr>`).join(''):empty(4);
- $('fjDays').innerHTML=rows.length?rows.slice().reverse().map(r=>`<tr><td>${md(r.key)}</td><td>${fmt(r.visitors)}</td><td>${fmt(r.views)}</td><td>${dur(avg(r.dwellSec,r.visitors))}</td></tr>`).join(''):empty(4);
+ $('fjSections').innerHTML=order.length?order.map(([k,v])=>`<tr><td>${esc(name(k))}</td><td>${fmt(v.views)}</td><td>${fmt(v.visitors)}</td><td>${dur(avg(v.dwellSec,v.dwellViews))}</td></tr>`).join(''):empty(4);
+ $('fjDays').innerHTML=rows.length?rows.slice().reverse().map(r=>`<tr><td>${md(r.key)}</td><td>${fmt(r.visitors)}</td><td>${fmt(r.views)}</td><td>${dur(avg(r.dwellSec,r.dwellers))}</td></tr>`).join(''):empty(4);
 }
 
 function renderJejumung(){
@@ -153,16 +152,16 @@ function renderJejumung(){
  const keys=range(),rows=keys.map(k=>({key:k,...summarize(days[k],k)})),today=rows.at(-1),yesterday=rows.at(-2);
  const tile=(id,yid,field)=>{$(id).textContent=fmt(today[field]);$(yid).textContent=`어제 ${fmt(yesterday[field])}`;};
  tile('todayVisitors','yVisitors','visitors');tile('todayViews','yViews','views');tile('todayPlays','yPlays','plays');tile('todayLounge','yLounge','lounge');
- $('todayDwell').textContent=dur(avg(today.dwellSec,today.visitors));$('yDwell').textContent=`어제 ${dur(avg(yesterday.dwellSec,yesterday.visitors))}`;
+ $('todayDwell').textContent=dur(avg(today.dwellSec,today.dwellers));$('yDwell').textContent=`어제 ${dur(avg(yesterday.dwellSec,yesterday.dwellers))}`;
  const all=new Set(rows.flatMap(r=>[...r.uids]));
  $('rangeSummary').textContent=`${span}일 동안 다녀간 브라우저 ${fmt(all.size)} · 페이지뷰 ${fmt(rows.reduce((a,r)=>a+r.views,0))}`;
- chart($('chart'),rows,[{key:'visitors',...SITES.jejumung}],r=>`<span>방문자 ${fmt(r.visitors)} · 평균 ${dur(avg(r.dwellSec,r.visitors))}</span><span>페이지뷰 ${fmt(r.views)} · 재생 ${fmt(r.plays)} · 쉼터 ${fmt(r.lounge)}</span>`);
+ chart($('chart'),rows,[{key:'visitors',...SITES.jejumung}],r=>`<span>방문자 ${fmt(r.visitors)} · 평균 ${dur(avg(r.dwellSec,r.dwellers))}</span><span>페이지뷰 ${fmt(r.views)} · 재생 ${fmt(r.plays)} · 쉼터 ${fmt(r.lounge)}</span>`);
  const courses={};for(const r of rows)for(const[id,c]of Object.entries(r.courses)){const t=courses[id]||={plays:0,people:new Set()};t.plays+=c.plays;}
  // People per course over the range: distinct visitors who played it on any day.
  for(const k of keys)for(const[uid,u]of Object.entries(days[k]||{}))for(const id of Object.keys(u.p||{}))courses[id].people.add(uid);
  const order=Object.entries(courses).sort((a,b)=>b[1].plays-a[1].plays);
  $('courses').innerHTML=order.length?order.map(([id,c])=>`<tr><td>${esc(title(id))}</td><td>${fmt(c.plays)}</td><td>${fmt(c.people.size)}</td></tr>`).join(''):'<tr><td colspan="3" class="empty">아직 재생 기록이 없어요</td></tr>';
- $('days').innerHTML=rows.slice().reverse().map(r=>`<tr><td>${md(r.key)}</td><td>${fmt(r.visitors)}</td><td>${fmt(r.views)}</td><td>${fmt(r.plays)}</td><td>${fmt(r.lounge)}</td><td>${dur(avg(r.dwellSec,r.visitors))}</td></tr>`).join('');
+ $('days').innerHTML=rows.slice().reverse().map(r=>`<tr><td>${md(r.key)}</td><td>${fmt(r.visitors)}</td><td>${fmt(r.views)}</td><td>${fmt(r.plays)}</td><td>${fmt(r.lounge)}</td><td>${dur(avg(r.dwellSec,r.dwellers))}</td></tr>`).join('');
 }
 const esc=s=>String(s).replace(/[&<>"]/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;'}[c]));
 
@@ -202,8 +201,8 @@ addEventListener('resize',()=>{if(!$('board').hidden)render();});
 function sampleFunjeju(n){
  let seed=11;const rnd=()=>(seed=(seed*16807)%2147483647)/2147483647,keys=['home','cctv','watch','promo','etc'],weight=[1,.6,.45,.08,.05];
  const out=[];for(let i=n-1;i>=0;i--){const date=new Date(Date.now()-i*864e5).toISOString().slice(0,10),sections={};let views=0,visitors=0,dwell=0;
-  keys.forEach((k,j)=>{const v=Math.round((120+rnd()*160)*weight[j]),p=Math.round(v*(.35+rnd()*.2)),d=Math.round(p*(40+rnd()*200));if(!v)return;sections[k]={views:v,visitors:p,dwellSec:i<2?d:0};views+=v;visitors=Math.max(visitors,p);dwell+=d;});
-  out.push({date,views,visitors:Math.round(visitors*1.4),dwellSec:i<2?dwell:null,sections});}
+  keys.forEach((k,j)=>{const v=Math.round((120+rnd()*160)*weight[j]),p=Math.round(v*(.35+rnd()*.2)),d=Math.round(p*(40+rnd()*200));if(!v)return;sections[k]={views:v,visitors:p,dwellSec:i<2?d:0,dwellViews:i<2?Math.round(v*.8):0};views+=v;visitors=Math.max(visitors,p);dwell+=d;});
+  out.push({date,views,visitors:Math.round(visitors*1.4),dwellSec:i<2?dwell:null,dwellVisitors:i<2?Math.round(visitors*1.2):0,sections});}
  return{generatedAt:Date.now(),sections:{home:'홈',cctv:'실시간 CCTV',watch:'CCTV 영상 창',promo:'업소 홍보',etc:'기타'},recentVisitors:7,days:out};
 }
 
@@ -227,7 +226,7 @@ if(preview){
  // Sample shape only, for checking the layout without signing in.
  const ids=CLIPS.map(c=>c.id);let seed=7;const rnd=()=>(seed=(seed*16807)%2147483647)/2147483647;
  for(let i=0;i<30;i++){const k=dayKey(Date.now()-i*864e5),node={};const n=Math.round(6+rnd()*30+(i<7?10:0));
-  for(let u=0;u<n;u++){const p={};if(rnd()<.7)p[ids[Math.floor(rnd()*ids.length)]]=1+Math.floor(rnd()*2);node['u'+i+'_'+u]={v:1+Math.floor(rnd()*3),...(i<2?{m:Math.floor(rnd()*14)}:{}),...(rnd()<.3?{l:1}:{}),...(Object.keys(p).length?{p}:{})};}
+  for(let u=0;u<n;u++){const p={};if(rnd()<.7)p[ids[Math.floor(rnd()*ids.length)]]=1+Math.floor(rnd()*2);node['u'+i+'_'+u]={v:1+Math.floor(rnd()*3),...(i<2&&rnd()<.8?{s:Math.floor(20+rnd()*800)}:{}),...(rnd()<.3?{l:1}:{}),...(Object.keys(p).length?{p}:{})};}
   days[k]=node;}
  live={a:{at:Date.now(),page:'walk'},b:{at:Date.now(),page:'walk'},c:{at:Date.now(),page:'lounge'},d:{at:Date.now(),page:'home'}};
  $('previewBanner').hidden=false;showBoard();

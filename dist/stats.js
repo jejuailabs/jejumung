@@ -40,13 +40,17 @@ async function send(path,method,body,keepalive=false){
 }
 const count=(field,keepalive)=>send(`days/${dayKey()}/$uid`,'PATCH',{[field]:inc},keepalive).catch(()=>{});
 const alive=()=>send('live/$uid','PUT',{at:{'.sv':'timestamp'},page,...(clip&&/^[A-Z0-9_]{1,24}$/.test(clip)?{clip}:{})}).catch(()=>{});
-// Dwell time `m`: one minute per minute the page is in front, and the last part rounds to the nearest minute.
+// Dwell time `s`: seconds the page is in front, added once a minute and once more on leaving. The rules
+// take at most 90 at a time, so a laptop waking from sleep cannot add the hours it was shut.
+function dwell(keepalive){
+ const sec=Math.min(90,Math.round((Date.now()-since)/1000));since=Date.now();
+ if(sec>=1)send(`days/${dayKey()}/$uid`,'PATCH',{s:{'.sv':{increment:sec}}},keepalive).catch(()=>{});
+}
 function gone(){
- if(!beat)return;clearInterval(beat);beat=null;
- if(Date.now()-since>=BEAT/2)count('m',true);
+ if(!beat)return;clearInterval(beat);beat=null;dwell(true);
  if(session)send('live/$uid','DELETE',undefined,true).catch(()=>{});
 }
-function show(){if(beat)return;alive();since=Date.now();beat=setInterval(()=>{alive();count('m');since=Date.now();},BEAT);}
+function show(){if(beat)return;alive();since=Date.now();beat=setInterval(()=>{alive();dwell();},BEAT);}
 
 if(!off){
  count('v');
