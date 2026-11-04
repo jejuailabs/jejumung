@@ -42,7 +42,7 @@ export const CLIPS = [
 const scenic=(id,title,place,line,map)=>({id,title,place,line,map,src:`/scenic/${id}/1/index.m3u8`,poster:`/lab/media/scenic/${id}.jpg`});
 export const SCENIC=[
  scenic('SAEBYEOL','은빛 억새 비탈','새별오름','바람이 불 때마다 억새가 은빛으로 일렁여요.',{lat:33.3643,lon:126.3597}),
- scenic('JOCHEON','바닷가 정자와 파도','조천 바닷가','파도가 부서지는 소리가 여기까지 들리는 것 같아요.',{lat:33.5503,lon:126.6410}),
+ scenic('JOCHEON','닭머르 정자와 파도','조천 닭머르','파도가 부서지는 소리가 여기까지 들리는 것 같아요.',{lat:33.5503,lon:126.6410}),
  scenic('DARANGSHI','겨울 억새와 둥근 오름','다랑쉬오름','하늘이 정말 파래요. 오름이 동그랗게 보여요.',{lat:33.4776,lon:126.8215}),
  scenic('SEOGWANG','녹차밭과 홀로 선 나무','서광 녹차밭','초록 이랑 끝에 나무 한 그루가 서 있어요.',{lat:33.3059,lon:126.2951}),
  scenic('SONGAKSAN','바다 너머 산이 보이는 초원','송악산','풀밭이 바람에 물결처럼 움직여요.',{lat:33.2047,lon:126.2875}),
