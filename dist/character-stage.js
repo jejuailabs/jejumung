@@ -1,5 +1,5 @@
 import * as THREE from './vendor/three.module.js';
-import {createCompanion} from './companion.js?v=nature-12';
+import {createCompanion} from './companion.js?v=nature-14';
 
 // A small turntable for the character picker: the live model idles, glances around,
 // waves now and then, and turns slowly so the back-view details read too.

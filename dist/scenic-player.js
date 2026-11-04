@@ -52,7 +52,7 @@ export async function openScenic(id,{root=document.body,back='닫기',character=
   el.classList.toggle('theater',view==='theater');mode.textContent=view==='theater'?'화면 가득 보기':'극장에서 보기';
   if(view==='theater'&&!theater){
    const box=document.createElement('div');box.className='scenic-theater';el.insertBefore(box,el.querySelector('.scenic-top'));
-   const {createTheater}=await import('./theater.js?v=theater-14');
+   const {createTheater}=await import('./theater.js?v=theater-16');
    theater=createTheater(box,video,{character:characterFor(character).id});
   }else if(view!=='theater'&&theater){theater.dispose();el.querySelector('.scenic-theater').remove();theater=null;el.prepend(video);}
   video.play().catch(()=>{});

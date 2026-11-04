@@ -1,5 +1,5 @@
 import * as T from './vendor/three.module.js';
-import {createCompanion,preloadCompanionAssets} from './companion.js?v=nature-12';
+import {createCompanion,preloadCompanionAssets} from './companion.js?v=nature-14';
 import {characterFor} from './characters.js';
 import {roomView} from './mobile-retreat-layout.js';
 

@@ -251,18 +251,20 @@ export function createCompanion(T,{character='stone'}={}){
   // Theater actions (theater.js), over the floor sit: `act` is {name, t} with t seconds since it began.
   if(act&&sitting){
    const t=act.t,ease=x=>x<0?0:x>1?1:x*x*(3-2*x);
+   const mix=(a,b,k)=>a.map((v,n)=>v+(b[n]-v)*k);
    if(act.name==='eat'){
-    // The bucket stands by the right hip; the right hand dips into it and goes up to the mouth.
-    const c=(t%2)/2,up=c<.35?ease(c/.35):c<.7?1:1-ease((c-.7)/.3),chew=c>.35&&c<.75?Math.sin((c-.35)*40)*.03:0;
-    shoulders[0]=[-.62,0,.28];elbows[0]=[-1.05,0,.45];
-    shoulders[1]=[-.15-2.15*up,0,.30-.85*up];elbows[1]=[-.45-1.35*up,0,-.30*up];
-    neckAngles=[neckAngles[0]-.05*up+chew,neckAngles[1]*.3,neckAngles[2]*.3];
+    // Seen from behind: the right hand reaches out to the bucket by the hip, then comes up in
+    // front of the face; the head bobs a little while chewing.
+    const c=(t%2.2)/2.2,up=c<.3?ease(c/.3):c<.72?1:1-ease((c-.72)/.28),chew=c>.3&&c<.8?Math.sin((c-.3)*44)*.035:0;
+    shoulders[0]=[-.55,0,.25];elbows[0]=[-.95,0,.35];
+    shoulders[1]=mix([-.10,0,.55],[-1.95,0,.30],up);elbows[1]=mix([-.35,0,0],[-1.70,0,-.35],up);
+    neckAngles=[neckAngles[0]+.04*up+chew,neckAngles[1]*.3,neckAngles[2]*.3];
    }else if(act.name==='drink'){
-    // The cup comes up to the mouth and tips; the head tilts back to sip.
-    const c=(t%3.2)/3.2,up=c<.25?ease(c/.25):c<.75?1:1-ease((c-.75)/.25);
-    shoulders[1]=[-.45-.95*up,0,-.20-.20*up];elbows[1]=[-.80-.80*up,0,-.20*up];
+    // Cup up to the mouth, a few small sips (the head nods with each), then down in front again.
+    const c=(t%3.4)/3.4,up=c<.22?ease(c/.22):c<.78?1:1-ease((c-.78)/.22),sip=c>.22&&c<.78?Math.max(0,Math.sin((c-.22)*48))*.05:0;
+    shoulders[1]=mix([-.55,0,.20],[-1.90,0,.22],up);elbows[1]=mix([-.90,0,0],[-1.65,0,-.30],up);
     shoulders[0]=[-.12,0,.32];elbows[0]=[-.75,0,.06];
-    neckAngles=[neckAngles[0]-.16*up,neckAngles[1]*.3,neckAngles[2]*.3];chestAngles=[chestAngles[0]-.05*up,chestAngles[1],chestAngles[2]];
+    neckAngles=[neckAngles[0]-.10*up+sip,neckAngles[1]*.3,neckAngles[2]*.3];chestAngles=[chestAngles[0]-.04*up,chestAngles[1],chestAngles[2]];
    }else if(act.name==='clap'){
     const k=Math.abs(Math.sin(t*9))*.18;
     shoulders=[[-1.05,0,.50-k],[-1.05,0,-.50+k]];elbows=[[-.85,0,0],[-.85,0,0]];

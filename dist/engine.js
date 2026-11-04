@@ -3,13 +3,13 @@ import { attachMedia } from './media-player.js';
 import * as THREE from './vendor/three.module.js';
 import { CLIPS, mediaUrl } from './clips.js';
 import { REST_SCENES, COAST_REST_IDS } from './rest-scenes.js';
-import {createCompanion,preloadCompanionAssets} from './companion.js?v=nature-12';
+import {createCompanion,preloadCompanionAssets} from './companion.js?v=nature-14';
 import {characterFor,characterIcon,mountCharacterPicker} from './characters.js';
 import {createAudio} from './audio.js?v=snow-1';
 import {createBgm,NOTE_ICON} from './bgm.js?v=bgm-2';
 import {createCharacterStage} from './character-stage.js?v=fit-2';
-import {createCourseMap,nextCourse} from './course-map.js?v=map-24';
-import {openScenic,scenicSpot} from './scenic-player.js?v=scenic-19';
+import {createCourseMap,nextCourse} from './course-map.js?v=map-26';
+import {openScenic,scenicSpot} from './scenic-player.js?v=scenic-21';
 
 const $ = id => document.getElementById(id), video = $('source');
 const PLAY_ICON='<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M8 5.5v13l10.5-6.5z" fill="currentColor"/></svg>',PAUSE_ICON='<svg viewBox="0 0 24 24" aria-hidden="true"><path d="M7 5h3.5v14H7zM13.5 5H17v14h-3.5z" fill="currentColor"/></svg>';

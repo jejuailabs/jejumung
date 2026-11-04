@@ -1,5 +1,5 @@
 import * as THREE from './vendor/three.module.js';
-import {createCompanion} from './companion.js?v=nature-12';
+import {createCompanion} from './companion.js?v=nature-14';
 import {CHARACTERS} from './characters.js';
 
 // The four companions in a row on the home page, all in one renderer. Each idles and looks

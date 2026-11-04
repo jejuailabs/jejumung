@@ -1,5 +1,5 @@
 import * as THREE from './vendor/three.module.js';
-import {createCompanion} from './companion.js?v=nature-12';
+import {createCompanion} from './companion.js?v=nature-14';
 
 // Scenery theater: the scenic loop plays on the screen of an open-air cinema photo
 // (assets/theater, generated stills) while the walker's companion sits on a cushion in front
@@ -36,8 +36,8 @@ export function createTheater(container,video,{character='stone'}={}){
  const companion=createCompanion(THREE,{character});companion.setEnvIntensity(.4);
  companion.root.rotation.y=Math.PI;scene.add(companion.root);
 
- // Props for the actions, built here: a striped popcorn bucket that stands by the right hip while
- // eating (a kernel rides up in the right hand) and a cola cup held in the right hand. They live
+ // Props for the actions, built here: a striped popcorn bucket that stands by the right hip, in
+ // sight from behind, while eating (a kernel rides up in the right hand) and a cola cup held in the right hand. They live
  // in the companion's own frame (it faces +z) and appear only during their action.
  const stripes=document.createElement('canvas');stripes.width=64;stripes.height=8;
  {const g=stripes.getContext('2d');for(let i=0;i<8;i++){g.fillStyle=i%2?'#f6f1e6':'#d8322f';g.fillRect(i*8,0,8,8);}}
@@ -48,7 +48,7 @@ export function createTheater(container,video,{character='stone'}={}){
   const base=new THREE.Mesh(new THREE.CircleGeometry(.066,24),mat({color:0xd8322f}));base.rotation.x=-Math.PI/2;base.position.y=-.075;bucket.add(base);
   const kernel=mat({color:0xfff3c8,roughness:.95}),bump=new THREE.IcosahedronGeometry(.026,0);
   for(let i=0;i<16;i++){const a=i*2.4,r=.055*Math.sqrt((i+.5)/16),k=new THREE.Mesh(bump,kernel);k.position.set(Math.cos(a)*r,.068+Math.random()*.03,Math.sin(a)*r);k.rotation.set(a,a*1.7,0);bucket.add(k);}}
- bucket.position.set(.31,.34,.12);bucket.scale.setScalar(1.5);
+ bucket.position.set(.34,.33,.0);bucket.scale.setScalar(1.5);
  const piece=new THREE.Mesh(new THREE.IcosahedronGeometry(.024,0),mat({color:0xfff3c8,roughness:.95}));props.add(piece);
  const cup=new THREE.Group();props.add(cup);
  {const body=new THREE.Mesh(new THREE.CylinderGeometry(.046,.036,.14,20),mat({color:0xc8202a}));cup.add(body);
@@ -59,20 +59,20 @@ export function createTheater(container,video,{character='stone'}={}){
 
  // Actions: popcorn, cola, clapping and waving run for a few seconds; leaning back stays until
  // another button. `cycle` matches the timing of the arm poses in companion.js.
- // `turn` swings the body round toward the viewer (radians) so the hands and the props show:
- // the companion looks back at you while it eats, drinks, claps or waves.
- const ACTIONS={eat:{len:6,turn:1.9,line:'냠냠, 팝콘 맛있다!'},drink:{len:6.4,turn:1.9,line:'캬, 시원하다!'},clap:{len:3,turn:1.5,line:'와, 멋지다!'},wave:{len:3,turn:2.3,line:'안녕! 같이 보자.'},recline:{len:Infinity,turn:0,line:'아, 편하다.'}};
+ // `turn` swings the body round toward the viewer (radians): it looks back at you to clap or
+ // wave, but eats and drinks facing the screen, so those read from behind.
+ const ACTIONS={eat:{len:6.6,turn:0,line:'냠냠, 팝콘 맛있다!'},drink:{len:6.8,turn:0,line:'쪽쪽, 시원하다!'},clap:{len:3,turn:1.5,line:'와, 멋지다!'},wave:{len:3,turn:2.3,line:'안녕! 같이 보자.'},recline:{len:Infinity,turn:0,line:'아, 편하다.'}};
  let action=null,actionAt=0;
- const handPoint=new THREE.Vector3(),cupLift=new THREE.Vector3(0,.03,.07); // the cup sits in front of the fist
+ const handPoint=new THREE.Vector3(),cupLift=new THREE.Vector3(0,.03,.05); // the cup sits in front of the fist
  function holdProps(t){
   const name=action?.name;
   bucket.visible=name==='eat';cup.visible=name==='drink';piece.visible=false;
-  if(name==='eat'){const c=(t%2)/2;piece.visible=c>.15&&c<.6;}
+  if(name==='eat'){const c=(t%2.2)/2.2;piece.visible=c>.12&&c<.62;}
   if(name==='eat'||name==='drink'){
    companion.root.updateMatrixWorld(true);
    companion.hands[1].localToWorld(handPoint.set(0,-.235,.05));companion.root.worldToLocal(handPoint);
    if(piece.visible)piece.position.copy(handPoint);
-   if(name==='drink'){const c=(t%3.2)/3.2,up=c<.25?c/.25:c<.75?1:1-(c-.75)/.25;cup.position.copy(handPoint).add(cupLift);cup.rotation.set(-.7*up,0,.15);}
+   if(name==='drink'){const c=(t%3.4)/3.4,up=c<.22?c/.22:c<.78?1:1-(c-.78)/.22;cup.position.copy(handPoint).add(cupLift);cup.rotation.set(-.55*up,0,.15);}
   }
  }
 
