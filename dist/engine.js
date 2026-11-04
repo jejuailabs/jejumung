@@ -400,7 +400,12 @@ $('wave').addEventListener('click',()=>{waveUntil=performance.now()+2300;$('spee
 $('again').addEventListener('click',()=>{video.currentTime=0;stat('play');start();});$('stay').addEventListener('click',()=>setRest(true));
 document.addEventListener('keydown',e=>{if(e.target.matches('input,textarea,[contenteditable=true]'))return;if(resting){if(e.code==='Escape'){e.preventDefault();start();}return;}if(['KeyW','ArrowUp','KeyA','KeyD','ArrowLeft','ArrowRight'].includes(e.code)){e.preventDefault();if(!keys.has(e.code)){keys.add(e.code);if(['KeyW','ArrowUp'].includes(e.code))start();}}if(e.code==='Space'&&!e.repeat&&!e.target.matches('button,a')){e.preventDefault();toggle();}});
 document.addEventListener('keyup',e=>{keys.delete(e.code);if(['KeyW','ArrowUp'].includes(e.code))pause();});
-window.addEventListener('blur',()=>{keys.clear();pause();});document.addEventListener('visibilitychange',()=>{if(document.hidden){keys.clear();pause();}});
+// Clicking another window (a second monitor) keeps the walk going unless the walker turns the
+// pause on in the menu; a hidden tab always pauses.
+let blurPause=false;try{blurPause=localStorage['jejumong-blur-pause']==='on';}catch{}
+const showBlurPause=()=>{$('blurPause').setAttribute('aria-pressed',String(blurPause));$('blurPause').textContent=blurPause?'다른 창 누르면 멈춤 켬':'다른 창 누르면 멈춤 끔';};
+$('blurPause').addEventListener('click',()=>{blurPause=!blurPause;try{localStorage['jejumong-blur-pause']=blurPause?'on':'off';}catch{}showBlurPause();});showBlurPause();
+window.addEventListener('blur',()=>{keys.clear();if(blurPause)pause();});document.addEventListener('visibilitychange',()=>{if(document.hidden){keys.clear();pause();}});
 let arrivalTimer=null,arrivalTarget=null;
 function cancelArrival(){clearInterval(arrivalTimer);arrivalTimer=null;$('arrivalNext').textContent='';}
 function goToCourse(id,auto){location.href=`/engine?clip=${encodeURIComponent(id)}${auto?'&auto=1':''}`;}
