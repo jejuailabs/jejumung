@@ -14,7 +14,7 @@ let leaflet=null;
 function loadLeaflet(){
  // Script and both stylesheets must be in before the map measures its container.
  leaflet??=Promise.all([
-  ...['/vendor/leaflet.css','/course-map.css?v=map-5'].map(href=>new Promise(resolve=>{const css=document.createElement('link');css.rel='stylesheet';css.href=href;css.onload=css.onerror=resolve;document.head.append(css);})),
+  ...['/vendor/leaflet.css','/course-map.css?v=map-6'].map(href=>new Promise(resolve=>{const css=document.createElement('link');css.rel='stylesheet';css.href=href;css.onload=css.onerror=resolve;document.head.append(css);})),
   window.L?Promise.resolve():new Promise((resolve,reject)=>{const script=document.createElement('script');script.src='/vendor/leaflet.js';script.onload=resolve;script.onerror=()=>reject(Error('leaflet'));document.head.append(script);})
  ]).then(()=>window.L).catch(e=>{leaflet=null;throw e;});
  return leaflet;
@@ -24,7 +24,7 @@ function pinHtml(c,current,scale,compact){
  const dx=Math.round((c.map.dx??0)*scale),dy=Math.round((c.map.dy??-110)*scale);
  return`<div class="cm-pin${current?' current':''}" data-dx="${dx}" data-dy="${dy}" style="--dx:${dx}px;--dy:${dy}px">
   <svg class="cm-leader" aria-hidden="true"><line x1="0" y1="0" x2="${dx}" y2="${dy}"/></svg>
-  <button type="button" class="cm-dot" data-clip="${c.id}" ${compact?`aria-label="${c.title} 보기"`:'tabindex="-1" aria-hidden="true"'}></button>
+  <button type="button" class="cm-dot" data-clip="${c.id}" ${compact?`aria-label="${c.title} 보기" style="--thumb:url('${c.poster}')"`:'tabindex="-1" aria-hidden="true"'}></button>
   <button type="button" class="cm-card" data-clip="${c.id}" aria-label="${c.title} 걷기, ${minutes(c.duration)}${current?', 지금 걷는 길':''}">
    <img src="${c.poster}" alt="" decoding="async"><b>${c.title}</b><small>${minutes(c.duration)} · ${c.map.place||''}</small>${current?'<em>지금 여기</em>':''}
   </button></div>`;
@@ -65,28 +65,47 @@ export function createCourseMap(container,{currentId=null,onPick=null,modal=fals
    const current=c.id===currentId;
    markers[c.id]=L.marker([c.map.lat,c.map.lon],{keyboard:false,zIndexOffset:current?1000:0,icon:L.divIcon({className:'cm-marker',html:pinHtml(c,current,scale,compact),iconSize:[0,0]})}).addTo(map);
   }
-  // Phone maps show pins only. A tap opens the cards of every pin under the finger, since some
-  // courses lie a few pixels apart at island zoom; tapping it again or the map closes them.
+  // Phone maps show photo pins only. Pins closer than a photo merge into one with a count (the
+  // walk's own course on top); a tap opens the cards of its group, tapping it again or the map
+  // closes them.
+  let groups=new Map(),merge=()=>{};
   if(compact){
    const pinOf=id=>markers[id].getElement().querySelector('.cm-pin');
-   open=id=>{
+   merge=()=>{
+    if(!markers[courses[0].id].getElement())return; // markers join the map after its first view
+    const heads=[];groups=new Map();
+    for(const c of[...courses].sort((a,b)=>(b.id===currentId)-(a.id===currentId))){
+     const p=map.latLngToContainerPoint(markers[c.id].getLatLng()),head=heads.find(h=>h.p.distanceTo(p)<30);
+     if(head)head.ids.push(c.id);else heads.push({p,ids:[c.id]});
+    }
+    for(const{ids}of heads){
+     ids.forEach((id,i)=>{groups.set(id,ids);pinOf(id).classList.toggle('stacked',i>0);});
+     const dot=pinOf(ids[0]).querySelector('.cm-dot'),title=courses.find(c=>c.id===ids[0]).title;
+     dot.innerHTML=ids.length>1?`<i>${ids.length}</i>`:'';
+     dot.setAttribute('aria-label',ids.length>1?`${title} 외 ${ids.length-1}곳 보기`:`${title} 보기`);
+    }
+   };
+   open=(id,solo=false)=>{
     if(id&&pinOf(id).classList.contains('open'))id=null;
-    const at=id&&map.latLngToContainerPoint(markers[id].getLatLng());
+    const ids=!id?[]:solo?[id]:groups.get(id);
+    // Too many cards for a phone: zoom in until the group splits.
+    if(ids.length>3&&map.getZoom()<map.getMaxZoom()){map.flyToBounds(L.latLngBounds(ids.map(i=>markers[i].getLatLng())),{padding:[70,70],maxZoom:map.getMaxZoom(),duration:.6});return;}
     for(const[cid,marker]of Object.entries(markers)){
-     const show=!!at&&map.latLngToContainerPoint(marker.getLatLng()).distanceTo(at)<10;
+     const show=ids.includes(cid);
      pinOf(cid).classList.toggle('open',show);marker.setZIndexOffset(show?2e4:cid===currentId?1000:0);
     }
     container.classList.toggle('has-open',!!id);
     layoutCards();
    };
    map.on('click',e=>{if(container.classList.contains('has-open')&&!e.originalEvent.target.closest('.cm-marker'))open(null);});
+   map.on('zoomend',()=>merge());
   }
   const zoomClass=()=>{const z=map.getZoom();canvas.dataset.zoom=z>=11?'near':z>=9.75?'mid':'far';};
   // Cards are placed one by one in clips.js order. A card keeps its hand-set offset (slid back
   // inside the map) when that spot is clear; otherwise it takes the nearest spot on rings around
   // its pin that covers no placed card or pin and whose leader runs under no card.
   const layoutCards=()=>{
-   const W=canvas.clientWidth,H=canvas.clientHeight,PIN=compact?7:10,GAP=compact?2:6,S=compact?.62:1,CROSS=compact?60:2000;
+   const W=canvas.clientWidth,H=canvas.clientHeight,PIN=compact?18:10,GAP=compact?2:6,S=compact?.62:1,CROSS=compact?60:2000;
    const pins=[...canvas.querySelectorAll('.cm-pin')].map(pin=>({pin,p:map.layerPointToContainerPoint(L.DomUtil.getPosition(pin.parentElement))}));
    // Phone maps lay out only the cards a tap opened; every pin stays uncovered.
    const items=pins.filter(({pin})=>!compact||pin.classList.contains('open')).map(a=>{
@@ -114,7 +133,7 @@ export function createCourseMap(container,{currentId=null,onPick=null,modal=fals
      const c={x:Math.min(W-a.w,Math.max(a.w,x)),y:Math.min(H-a.h,Math.max(a.h,y)),w:a.w,h:a.h};
      let cost=Math.hypot(c.x-hx,c.y-hy)*.5;
      for(const b of others){cost+=overlap(c,b)*4;if(crosses(a.p,c,b)||crosses(b.p,b,c))cost+=CROSS;}
-     for(const{p}of pins)cost+=overlap(c,{x:p.x,y:p.y,w:PIN,h:PIN})*20;
+     for(const{p}of pins)cost+=overlap(c,{x:p.x,y:compact?p.y-21:p.y,w:PIN,h:compact?21:PIN})*20; // phone photo pins stand above their spot
      for(const b of controls)cost+=overlap(c,b)*20;
      if(!best||cost<best.cost)best={...c,cost};
     };
@@ -137,10 +156,10 @@ export function createCourseMap(container,{currentId=null,onPick=null,modal=fals
    canvas.addEventListener('click',()=>map.scrollWheelZoom.enable(),{once:true});
    if(touch){const hint=container.querySelector('.jeju-map-hint');let timer;canvas.addEventListener('touchstart',e=>{if(e.touches.length===1){hint.hidden=false;clearTimeout(timer);timer=setTimeout(()=>hint.hidden=true,1400);}else hint.hidden=true;},{passive:true});}
   }
-  fit();zoomClass();
+  fit();zoomClass();merge();
   // The walk's own course starts open, so the phone map shows where you are.
-  if(open&&currentId)open(currentId);else layoutCards();
- }).catch(()=>{canvas.innerHTML='<p class="jeju-map-error">지도를 불러오지 못했어요. 새로고침해 주세요.</p>';});
+  if(open&&currentId)open(currentId,true);else layoutCards();
+ }).catch(e=>{console.error(e);canvas.innerHTML='<p class="jeju-map-error">지도를 불러오지 못했어요. 새로고침해 주세요.</p>';});
  return handle;
 }
 export function nextCourse(currentId){const others=CLIPS.filter(c=>c.map&&c.id!==currentId);return others[Math.floor(Math.random()*others.length)]||CLIPS[0];}

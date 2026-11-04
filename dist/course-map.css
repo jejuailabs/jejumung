@@ -30,7 +30,7 @@
 .jeju-map .cm-leader{position:absolute;left:0;top:0;width:1px;height:1px;overflow:visible;pointer-events:none;z-index:0}
 .cm-leader line{stroke:#f4f1e2;stroke-width:1.5;stroke-dasharray:3 3;opacity:.85;filter:drop-shadow(0 1px 1px #0009)}
 .cm-dot{position:absolute;left:-8px;top:-8px;width:16px;height:16px;border-radius:50%;background:#eef3ea;border:3px solid #102527;box-shadow:0 2px 6px #0009;cursor:pointer}
-.cm-pin.current .cm-dot{background:#f4d072}
+.cm-pin.current .cm-dot{background-color:#f4d072}
 .cm-pin.current .cm-dot::after{content:'';position:absolute;inset:-12px;border-radius:50%;border:2px solid #f4d072;animation:cm-pulse 2s ease-out infinite}
 @keyframes cm-pulse{from{transform:scale(.4);opacity:1}to{transform:scale(1.4);opacity:0}}
 .cm-card{position:absolute;left:var(--dx);top:var(--dy);transform:translate(-50%,-50%);width:136px;margin:0;padding:0 0 7px;display:flex;flex-direction:column;align-items:stretch;gap:1px;background:#102527f0;border:1px solid #ffffff30;border-radius:12px;overflow:hidden;color:#eef3ea;text-align:center;cursor:pointer;box-shadow:0 8px 24px #000a;transition:transform .18s ease,border-color .18s ease;font:inherit}
@@ -43,11 +43,17 @@
 .cm-dot{padding:0;appearance:none}
 /* Phone maps show pins only; a tap opens the cards of the pins under it (course-map.js open). */
 .jeju-map.compact .cm-pin:not(.open) :is(.cm-card,.cm-leader){display:none}
-.jeju-map.compact .cm-dot::before{content:'';position:absolute;inset:-11px;border-radius:50%}
-.jeju-map.compact .cm-pin.open .cm-dot{background:#f4d072}
+/* Phone pins are photo pins: the course poster in a circle whose tail points at the spot. */
+.jeju-map.compact .cm-dot{left:-17px;top:-41px;width:34px;height:34px;border:2px solid #f4f1e2;background:#1d3a35 var(--thumb) center/cover;transform-origin:50% 120%}
+.jeju-map.compact .cm-dot::before{content:'';position:absolute;left:50%;top:100%;transform:translateX(-50%);border:6px solid transparent;border-top:7px solid #f4f1e2;border-bottom:0}
+.jeju-map.compact .cm-pin:is(.current,.open,.hl) .cm-dot{border-color:#f4d072}
+.jeju-map.compact .cm-pin:is(.current,.open,.hl) .cm-dot::before{border-top-color:#f4d072}
+.jeju-map.compact .cm-pin.open .cm-dot{transform:scale(1.15)}
+.jeju-map.compact .cm-pin.stacked .cm-dot{display:none}
+.cm-dot i{position:absolute;right:-7px;top:-7px;min-width:17px;height:17px;padding:0 4px;box-sizing:border-box;border-radius:9px;background:#f4d072;color:#102527;font:700 10px/17px system-ui,sans-serif;font-style:normal;box-shadow:0 1px 3px #0008}
 .jeju-map.compact .cm-card{width:124px}.jeju-map.compact .cm-card b{white-space:normal;line-height:1.25}
 .jeju-map-tip{display:none;position:absolute;left:50%;top:12px;transform:translateX(-50%);z-index:800;margin:0;padding:5px 12px;border-radius:14px;background:#06100fcc;color:#eef3ea;font-size:12px;white-space:nowrap;pointer-events:none}
 .jeju-map.compact:not(.has-open) .jeju-map-tip{display:block}
 
-.cm-pin.hl .cm-dot{background:#f4d072;transform:scale(1.25)}.cm-pin.hl .cm-card{border-color:#f4d072;box-shadow:0 6px 20px #000a}.cm-pin.hl .cm-leader line{stroke:#f4d072}
+.cm-pin.hl .cm-dot{background-color:#f4d072;transform:scale(1.25)}.cm-pin.hl .cm-card{border-color:#f4d072;box-shadow:0 6px 20px #000a}.cm-pin.hl .cm-leader line{stroke:#f4d072}
 .cm-dot,.cm-card{transition:transform .2s,border-color .2s,box-shadow .2s}
