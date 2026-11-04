@@ -17,6 +17,8 @@ const stats={
     '$uid':{
      '.write':'auth != null && auth.uid == $uid',
      v:step(500),l:step(200),
+     // Minutes the page was in front (stats.js): one per minute, so a day tops out at 1440.
+     m:step(1440),
      p:{'$clip':{'.validate':"$clip.matches(/^[A-Z0-9_]{1,24}$/) && "+step(200)['.validate']}},
      '$other':{'.validate':false}
     }

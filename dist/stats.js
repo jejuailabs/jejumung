@@ -10,7 +10,7 @@ const off=read('jejumong-stats')==='off'||new URLSearchParams(location.search).h
 // Days follow Korean time, whatever the visitor's clock zone is.
 export const dayKey=(at=Date.now())=>new Date(at+9*3600e3).toISOString().slice(0,10);
 const inc={'.sv':{increment:1}};
-let session=null,pending=null,page=location.pathname.startsWith('/engine')?'walk':'home',beat=null;
+let session=null,pending=null,page=location.pathname.startsWith('/engine')?'walk':'home',beat=null,since=0;
 const clip=new URLSearchParams(location.search).get('clip');
 
 async function token(){
@@ -38,10 +38,15 @@ async function send(path,method,body,keepalive=false){
  const s=await token();
  return fetch(`${ROOT}/${path.replace('$uid',s.uid)}.json?auth=${encodeURIComponent(s.id)}`,{method,keepalive,headers:{'content-type':'application/json'},body:body===undefined?undefined:JSON.stringify(body)});
 }
-const count=field=>send(`days/${dayKey()}/$uid`,'PATCH',{[field]:inc}).catch(()=>{});
+const count=(field,keepalive)=>send(`days/${dayKey()}/$uid`,'PATCH',{[field]:inc},keepalive).catch(()=>{});
 const alive=()=>send('live/$uid','PUT',{at:{'.sv':'timestamp'},page,...(clip&&/^[A-Z0-9_]{1,24}$/.test(clip)?{clip}:{})}).catch(()=>{});
-function gone(){clearInterval(beat);beat=null;if(session)send('live/$uid','DELETE',undefined,true).catch(()=>{});}
-function show(){if(beat)return;alive();beat=setInterval(alive,BEAT);}
+// Dwell time `m`: one minute per minute the page is in front, and the last part rounds to the nearest minute.
+function gone(){
+ if(!beat)return;clearInterval(beat);beat=null;
+ if(Date.now()-since>=BEAT/2)count('m',true);
+ if(session)send('live/$uid','DELETE',undefined,true).catch(()=>{});
+}
+function show(){if(beat)return;alive();since=Date.now();beat=setInterval(()=>{alive();count('m');since=Date.now();},BEAT);}
 
 if(!off){
  count('v');

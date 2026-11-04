@@ -1,26 +1,58 @@
 <!doctype html>
-<html lang="ko"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><meta name="robots" content="noindex,nofollow"><meta name="theme-color" content="#101c1e"><link rel="icon" href="data:image/svg+xml,%3Csvg xmlns=%27http://www.w3.org/2000/svg%27 viewBox=%270 0 64 64%27%3E%3Ccircle cx=%2732%27 cy=%2732%27 r=%2730%27 fill=%27%23b7ded6%27/%3E%3Cpath d=%27M2 32h60a30 30 0 0 1-60 0z%27 fill=%27%23102527%27/%3E%3C/svg%3E"><title>제주멍 관리자 · 방문 현황</title><link rel="stylesheet" href="admin.css?v=stats-2"><script type="module" src="admin.js?v=stats-2"></script></head>
+<html lang="ko"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1"><meta name="robots" content="noindex,nofollow"><meta name="theme-color" content="#101c1e"><link rel="icon" href="data:image/svg+xml,%3Csvg xmlns=%27http://www.w3.org/2000/svg%27 viewBox=%270 0 64 64%27%3E%3Ccircle cx=%2732%27 cy=%2732%27 r=%2730%27 fill=%27%23b7ded6%27/%3E%3Cpath d=%27M2 32h60a30 30 0 0 1-60 0z%27 fill=%27%23102527%27/%3E%3C/svg%3E"><title>제주멍 관리자 · 방문 현황</title><link rel="stylesheet" href="admin.css?v=stats-4"><script type="module" src="admin.js?v=stats-4"></script></head>
 <body><header><a href="/" class="brand">◒ 제주멍</a><span>방문 현황 · 관리자</span><button id="signOut" type="button" hidden>로그아웃</button></header>
 <main>
 <p id="previewBanner" class="banner" hidden>예시 데이터로 그린 화면이에요. 실제 기록이 아닙니다.</p>
 <section id="gate" class="gate" hidden><h1>관리자만 볼 수 있어요</h1><p id="gateText">관리자로 등록된 Google 계정으로 로그인해 주세요.</p><button id="signIn" type="button" class="primary">Google로 로그인</button><p id="gateError" class="error" role="alert" hidden></p><div id="uidBox" class="uid" hidden><span>이 계정 번호를 관리자 등록에 씁니다</span><code id="uid"></code><button id="copyUid" type="button">복사</button></div></section>
 <section id="board" hidden>
- <div class="live" aria-live="polite"><div><p class="label">지금 접속 중</p><p class="hero"><b id="liveCount">0</b><small>명</small></p><p id="liveSplit" class="split"></p></div><p class="note">최근 2분 안에 신호를 보낸 브라우저 · 자동 갱신</p></div>
- <div class="tiles">
-  <div class="tile"><p class="label">오늘 방문자</p><p class="value" id="todayVisitors">0</p><p class="sub" id="yVisitors"></p></div>
-  <div class="tile"><p class="label">오늘 페이지뷰</p><p class="value" id="todayViews">0</p><p class="sub" id="yViews"></p></div>
-  <div class="tile"><p class="label">오늘 코스 재생</p><p class="value" id="todayPlays">0</p><p class="sub" id="yPlays"></p></div>
-  <div class="tile"><p class="label">오늘 쉼터 입장</p><p class="value" id="todayLounge">0</p><p class="sub" id="yLounge"></p></div>
- </div>
+ <div class="site-tabs" role="tablist" aria-label="사이트"><button type="button" role="tab" id="tab-all" data-site="all" aria-controls="panel-all">전체</button><button type="button" role="tab" id="tab-funjeju" data-site="funjeju" aria-controls="panel-funjeju"><i class="dot fj"></i>펀제주</button><button type="button" role="tab" id="tab-jejumung" data-site="jejumung" aria-controls="panel-jejumung"><i class="dot jm"></i>제주멍</button></div>
  <div class="range" role="group" aria-label="기간"><button type="button" data-days="7">7일</button><button type="button" data-days="14" aria-pressed="true">14일</button><button type="button" data-days="30">30일</button><span id="rangeSummary"></span></div>
- <figure class="chart"><figcaption>일별 방문자 수</figcaption><div id="chart"></div><div id="tip" class="tip" hidden></div></figure>
- <div class="tables">
-  <section><h2>코스별 재생</h2><table><thead><tr><th>코스</th><th>재생 수</th><th>재생한 사람</th></tr></thead><tbody id="courses"></tbody></table></section>
-  <section><h2>날짜별 기록</h2><table><thead><tr><th>날짜</th><th>방문자</th><th>페이지뷰</th><th>재생</th><th>쉼터</th></tr></thead><tbody id="days"></tbody></table></section>
+ <div class="panel" id="panel-all" role="tabpanel" aria-labelledby="tab-all">
+  <div class="live" aria-live="polite"><div><p class="label">지금 접속 중 · 두 사이트 합계</p><p class="hero"><b id="allLive">0</b><small>명</small></p><p id="allLiveSplit" class="split"></p></div><p class="note">제주멍은 최근 2분, 펀제주는 최근 5분 기준</p></div>
+  <div class="tiles">
+   <div class="tile"><p class="label">오늘 방문자</p><p class="value" id="allTodayVisitors">0</p><p class="sub" id="allTodayVisitorsSplit"></p></div>
+   <div class="tile"><p class="label">오늘 페이지뷰</p><p class="value" id="allTodayViews">0</p><p class="sub" id="allTodayViewsSplit"></p></div>
+   <div class="tile"><p class="label">오늘 평균 체류</p><p class="value" id="allTodayDwell">—</p><p class="sub" id="allTodayDwellSplit"></p></div>
+   <div class="tile"><p class="label">기간 방문자 (일별 합)</p><p class="value" id="allRangeVisitors">0</p><p class="sub" id="allRangeVisitorsSplit"></p></div>
+  </div>
+  <p id="fjStatusAll" class="fj-status" hidden></p>
+  <figure class="chart"><figcaption>일별 방문자 수 · 사이트별<span class="legend"><span><i class="dot fj"></i>펀제주</span><span><i class="dot jm"></i>제주멍</span></span></figcaption><div class="plot" id="chartAll"></div><div class="tip" hidden></div></figure>
+  <div class="tables one"><section><h2>날짜별 기록</h2><table><thead><tr><th>날짜</th><th>펀제주 방문자</th><th>제주멍 방문자</th><th>방문자 합계</th><th>페이지뷰 합계</th><th>평균 체류</th></tr></thead><tbody id="allDays"></tbody></table></section></div>
  </div>
- <section class="youtube" aria-labelledby="ytTitle"><h2 id="ytTitle">풍경 극장 유튜브 연결</h2>
-  <p class="yt-help">유튜브에 올린 풍경 영상 주소를 붙여 넣고 저장하면, 그 풍경은 극장에서 유튜브로 재생돼요(우리 서버 트래픽 없음). 비우고 저장하면 원래 영상으로 돌아가요. 일부공개 영상도 돼요.</p>
-  <ul id="ytList"></ul></section>
- <div class="foot"><label><input type="checkbox" id="optOut"> 이 브라우저에서 들어가는 방문은 집계하지 않기</label><p>날짜는 한국 시간 기준이에요. 방문자는 하루에 같은 브라우저를 한 명으로 세고, 재생은 걷기를 시작하거나 다시 걸은 횟수예요. 광고 차단기나 시크릿 창은 다르게 셀 수 있어요.</p></div>
+ <div class="panel" id="panel-funjeju" role="tabpanel" aria-labelledby="tab-funjeju" hidden>
+  <div class="live" aria-live="polite"><div><p class="label">최근 5분 접속</p><p class="hero"><b id="fjLive">0</b><small>명</small></p><p id="fjUpdated" class="split"></p></div><div class="live-side"><button type="button" id="fjReload">다시 집계</button><p class="note">최근 5분 안에 페이지를 연 방문자 · 열 때와 '다시 집계' 때 읽어요</p></div></div>
+  <div class="tiles">
+   <div class="tile"><p class="label">오늘 방문자</p><p class="value" id="fjTodayVisitors">0</p><p class="sub" id="fjYVisitors"></p></div>
+   <div class="tile"><p class="label">오늘 페이지뷰</p><p class="value" id="fjTodayViews">0</p><p class="sub" id="fjYViews"></p></div>
+   <div class="tile"><p class="label">오늘 평균 체류</p><p class="value" id="fjTodayDwell">—</p><p class="sub" id="fjYDwell"></p></div>
+   <div class="tile"><p class="label">기간 방문자 (일별 합)</p><p class="value" id="fjRangeVisitors">0</p><p class="sub">여러 날 온 사람은 날마다 셉니다</p></div>
+   <div class="tile"><p class="label">기간 페이지뷰</p><p class="value" id="fjRangeViews">0</p><p class="sub" id="fjTopSection"></p></div>
+  </div>
+  <p id="fjStatus" class="fj-status" hidden></p>
+  <figure class="chart"><figcaption>펀제주 일별 방문자 수</figcaption><div class="plot" id="chartFj"></div><div class="tip" hidden></div></figure>
+  <div class="tables">
+   <section><h2>구역별</h2><table><thead><tr><th>구역</th><th>페이지뷰</th><th>방문자 (일별 합)</th><th>평균 체류</th></tr></thead><tbody id="fjSections"></tbody></table></section>
+   <section><h2>날짜별 기록</h2><table><thead><tr><th>날짜</th><th>방문자</th><th>페이지뷰</th><th>평균 체류</th></tr></thead><tbody id="fjDays"></tbody></table></section>
+  </div>
+ </div>
+ <div class="panel" id="panel-jejumung" role="tabpanel" aria-labelledby="tab-jejumung" hidden>
+  <div class="live" aria-live="polite"><div><p class="label">지금 접속 중</p><p class="hero"><b id="liveCount">0</b><small>명</small></p><p id="liveSplit" class="split"></p></div><p class="note">최근 2분 안에 신호를 보낸 브라우저 · 자동 갱신</p></div>
+  <div class="tiles">
+   <div class="tile"><p class="label">오늘 방문자</p><p class="value" id="todayVisitors">0</p><p class="sub" id="yVisitors"></p></div>
+   <div class="tile"><p class="label">오늘 페이지뷰</p><p class="value" id="todayViews">0</p><p class="sub" id="yViews"></p></div>
+   <div class="tile"><p class="label">오늘 코스 재생</p><p class="value" id="todayPlays">0</p><p class="sub" id="yPlays"></p></div>
+   <div class="tile"><p class="label">오늘 쉼터 입장</p><p class="value" id="todayLounge">0</p><p class="sub" id="yLounge"></p></div>
+   <div class="tile"><p class="label">오늘 평균 체류</p><p class="value" id="todayDwell">—</p><p class="sub" id="yDwell"></p></div>
+  </div>
+  <figure class="chart"><figcaption>제주멍 일별 방문자 수</figcaption><div class="plot" id="chart"></div><div class="tip" hidden></div></figure>
+  <div class="tables">
+   <section><h2>코스별 재생</h2><table><thead><tr><th>코스</th><th>재생 수</th><th>재생한 사람</th></tr></thead><tbody id="courses"></tbody></table></section>
+   <section><h2>날짜별 기록</h2><table><thead><tr><th>날짜</th><th>방문자</th><th>페이지뷰</th><th>재생</th><th>쉼터</th><th>평균 체류</th></tr></thead><tbody id="days"></tbody></table></section>
+  </div>
+  <section class="youtube" aria-labelledby="ytTitle"><h2 id="ytTitle">풍경 극장 유튜브 연결</h2>
+   <p class="yt-help">유튜브에 올린 풍경 영상 주소를 붙여 넣고 저장하면, 그 풍경은 극장에서 유튜브로 재생돼요(우리 서버 트래픽 없음). 비우고 저장하면 원래 영상으로 돌아가요. 일부공개 영상도 돼요.</p>
+   <ul id="ytList"></ul></section>
+ </div>
+ <div class="foot"><label><input type="checkbox" id="optOut"> 이 브라우저에서 들어가는 제주멍 방문은 집계하지 않기</label><p>제주멍 날짜는 한국 시간 기준이에요. 펀제주 날짜는 펀제주 기록 방식대로 세계 표준시(한국 시간 오전 9시에 하루가 바뀜) 기준이라, 전체 탭에서 같은 날짜로 묶을 때 9시간 어긋날 수 있어요. 두 사이트는 방문자 번호가 달라서 양쪽을 다 다녀간 사람은 합계에서 두 번 세요. 방문자는 하루에 같은 브라우저를 한 명으로 세고, 평균 체류는 그날 화면을 앞에 띄워 둔 시간을 방문자 수로 나눈 값이에요(2026년 11월 4일부터 기록, 펀제주는 한 페이지에 최대 30분까지). 재생은 걷기를 시작하거나 다시 걸은 횟수예요. 광고 차단기나 시크릿 창은 다르게 셀 수 있어요.</p></div>
 </section>
 </main></body></html>

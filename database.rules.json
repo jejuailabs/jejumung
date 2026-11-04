@@ -220,6 +220,9 @@
               "l": {
                 ".validate": "newData.isNumber() && newData.val() == (data.exists() ? data.val() : 0) + 1 && newData.val() <= 200"
               },
+              "m": {
+                ".validate": "newData.isNumber() && newData.val() == (data.exists() ? data.val() : 0) + 1 && newData.val() <= 1440"
+              },
               "p": {
                 "$clip": {
                   ".validate": "$clip.matches(/^[A-Z0-9_]{1,24}$/) && newData.isNumber() && newData.val() == (data.exists() ? data.val() : 0) + 1 && newData.val() <= 200"
