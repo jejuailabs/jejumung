@@ -1,0 +1,14 @@
+/* 제주멍 → 펀제주 연결 (funjeju-bridge.js) */
+.fj-home{margin:14px auto 0;max-width:1100px;padding:0 20px;text-align:center;font-size:14px}
+.fj-home-link{display:inline-flex;align-items:center;gap:8px;padding:10px 18px;border-radius:999px;border:1px solid rgba(143,180,255,.35);background:rgba(8,12,24,.55);color:#dfe7ff;text-decoration:none}
+.fj-home-link:hover{border-color:rgba(143,180,255,.7)}
+.fj-dot{width:7px;height:7px;border-radius:50%;background:#7cf0c8;flex:none}
+.fj-arrival{margin:16px auto 0;display:flex;align-items:center;gap:14px;max-width:440px;width:100%;padding:10px;border-radius:16px;background:rgba(3,5,10,.8);border:1px solid rgba(143,180,255,.4);color:#fff;text-decoration:none;text-align:left;box-sizing:border-box}
+.fj-arrival img{width:120px;height:68px;border-radius:10px;object-fit:cover;flex:none;background:#0b1020}
+.fj-arrival-text{display:flex;flex-direction:column;gap:3px;min-width:0}
+.fj-live{font-size:11px;letter-spacing:.08em;color:#8fb4ff}
+.fj-arrival strong{font-size:15px;line-height:1.35}
+.fj-sub{font-size:12px;color:#b7c2e2}
+.fj-lounge{display:inline-flex;align-items:center;min-height:36px;padding:0 12px;border-radius:999px;border:1px solid rgba(143,180,255,.45);color:#dfe7ff;font-size:12px;text-decoration:none;white-space:nowrap}
+@media (max-width:520px){.fj-arrival img{width:96px;height:54px}.fj-arrival strong{font-size:14px}}
+.fj-foot{color:#9fc7ff;text-decoration:none}.fj-foot:hover{text-decoration:underline}
