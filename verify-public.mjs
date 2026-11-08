@@ -24,6 +24,8 @@ for(const clip of CLIPS){
  console.log(`${clip.id}: ${duration.toFixed(3)} sec, ${durations.length} segments, references OK`);
 }
 for(const spot of SCENIC){
+ // YouTube-only spots have no copy on our media host: an 11-character id and a local poster.
+ if(spot.src==null){if(!/^[A-Za-z0-9_-]{11}$/.test(spot.youtube||''))fail('YouTube-only scenic spot needs a video id: '+spot.id);await stat(new URL('.'+spot.poster,root));continue;}
  if(!/^\/scenic\/[A-Z0-9_]+\/\d+\/index\.m3u8$/.test(spot.src))fail('Scenic video must be a versioned media-project path: '+spot.id);
  await stat(new URL('.'+spot.poster,root));
  if(!haveMedia)continue;
