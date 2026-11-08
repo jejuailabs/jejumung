@@ -36,7 +36,7 @@ let ytLinks={},ytSave=null;
 function renderYoutube(){
  $('ytList').innerHTML=SCENIC.map(s=>{const id=ytLinks[s.id]||'';return`<li data-spot="${s.id}"><img src="${s.poster}" alt=""><div><b>${s.title}</b><small>${s.place}</small></div>
   <input type="url" inputmode="url" placeholder="https://youtu.be/…" value="${id?'https://youtu.be/'+id:''}" aria-label="${s.title} 유튜브 주소">
-  <button type="button">저장</button><span class="yt-state">${id?`<a href="https://youtu.be/${id}" target="_blank" rel="noopener">연결됨</a>`:'원래 영상'}</span></li>`;}).join('');
+  <button type="button">저장</button><span class="yt-state">${id?`<a href="https://youtu.be/${id}" target="_blank" rel="noopener">연결됨</a>`:s.youtube?`<a href="https://youtu.be/${s.youtube}" target="_blank" rel="noopener">기본 유튜브</a>`:'원래 영상'}</span></li>`;}).join('');
 }
 $('ytList').addEventListener('click',async e=>{
  const b=e.target.closest('button');if(!b)return;const li=b.closest('li'),input=li.querySelector('input'),state=li.querySelector('.yt-state');

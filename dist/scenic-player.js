@@ -17,7 +17,7 @@ function loadHls(){
 }
 let css=null;
 function loadCss(){
- css??=new Promise(resolve=>{const l=document.createElement('link');l.rel='stylesheet';l.href='/scenic.css?v=scenic-8';l.onload=l.onerror=resolve;document.head.append(l);});
+ css??=new Promise(resolve=>{const l=document.createElement('link');l.rel='stylesheet';l.href='/scenic.css?v=scenic-9';l.onload=l.onerror=resolve;document.head.append(l);});
  return css;
 }
 export const scenicSpot=id=>SCENIC.find(s=>s.id===id);
@@ -36,7 +36,7 @@ export async function openScenic(id,{root=document.body,back='닫기',character=
  const el=document.createElement('div');
  el.className='scenic';el.style.setProperty('--poster',`url('${spot.poster}')`);el.setAttribute('role','dialog');el.setAttribute('aria-label',`${spot.title} 풍경`);
  el.innerHTML=`<video muted playsinline loop autoplay preload="auto" crossorigin="anonymous" poster="${spot.poster}" aria-hidden="true"></video>
-  <div class="scenic-top"><p><small>${spot.place}</small><b>${spot.title}</b></p><button type="button" class="scenic-mode"></button><button type="button" class="scenic-back">${back}</button></div>
+  <div class="scenic-top"><p><small>${spot.place}</small><b>${spot.title}</b></p><button type="button" class="scenic-next">다음 풍경</button><button type="button" class="scenic-mode"></button><button type="button" class="scenic-back">${back}</button></div>
   <p class="scenic-line" hidden>${spot.line}</p>
   <nav class="scenic-acts" aria-label="친구와 함께 하기">${ACTS.map(([id,icon,label])=>`<button type="button" data-act="${id}" aria-pressed="false"><span aria-hidden="true">${icon}</span>${label}</button>`).join('')}</nav><p class="scenic-error" hidden>풍경 영상을 불러오지 못했어요.</p>`;
  root.append(el);
@@ -76,17 +76,23 @@ export async function openScenic(id,{root=document.body,back='닫기',character=
  setView(stored==='full'?'full':'theater');
  return new Promise(resolve=>{
   let closed=false;
-  const close=()=>{
+  // "다음 풍경" walks through every spot (some, like multi-place reels, have no map pin), in the
+  // same place and with the same companion; the caller hears back only when the last one closes.
+  el.querySelector('.scenic-next').addEventListener('click',()=>{
+   if(closed)return;const next=SCENIC[(SCENIC.indexOf(spot)+1)%SCENIC.length];
+   close(false);openScenic(next.id,{root,back,character}).then(resolve);
+  },{once:true});
+  const close=(done=true)=>{
    if(closed)return;closed=true;
    clearTimeout(lineTimer);clearInterval(actsTimer);removeEventListener('keydown',onKey,true);
    theater?.dispose();player?.destroy();
    if(yt)video.remove();else{video.pause();video.removeAttribute('src');video.load();}
    if(lock)document.documentElement.style.overflow='';
-   el.classList.remove('on');setTimeout(()=>el.remove(),350);resolve();
+   el.classList.remove('on');setTimeout(()=>el.remove(),350);if(done)resolve();
   };
   // Keys stay with the viewer (Space must not start the walk underneath); Enter/Space still press the button.
   const onKey=e=>{e.stopPropagation();if(e.key==='Escape')close();};
   addEventListener('keydown',onKey,true);
-  button.addEventListener('click',close,{once:true});
+  button.addEventListener('click',()=>close(),{once:true});
  });
 }

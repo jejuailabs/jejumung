@@ -4,7 +4,7 @@ import {CLIPS,SCENIC} from './clips.js';
 // offline from OpenStreetMap coastline, forests and roads plus AWS Terrain Tiles relief by
 // test-lab/05-tools/map_*.py. Pins sit on the clips' shooting GPS; each course card hangs off
 // its pin by a leader line, offset in screen pixels (clips.js map.dx/dy) so it reads at any zoom.
-// Scenic spots (clips.js SCENIC) are small square photo pins that play their view when pressed.
+// Scenic spots (clips.js SCENIC) are round photo pins that play their view when pressed.
 const TILE_BOUNDS=[[33.064,126.080],[33.651,127.001]];
 // The island plus room for the cards that hang below the south coast and above the north.
 const ISLAND=[[33.11,126.14],[33.61,126.98]];
@@ -15,7 +15,7 @@ let leaflet=null;
 function loadLeaflet(){
  // Script and both stylesheets must be in before the map measures its container.
  leaflet??=Promise.all([
-  ...['/vendor/leaflet.css','/course-map.css?v=map-9'].map(href=>new Promise(resolve=>{const css=document.createElement('link');css.rel='stylesheet';css.href=href;css.onload=css.onerror=resolve;document.head.append(css);})),
+  ...['/vendor/leaflet.css','/course-map.css?v=map-10'].map(href=>new Promise(resolve=>{const css=document.createElement('link');css.rel='stylesheet';css.href=href;css.onload=css.onerror=resolve;document.head.append(css);})),
   window.L?Promise.resolve():new Promise((resolve,reject)=>{const script=document.createElement('script');script.src='/vendor/leaflet.js';script.onload=resolve;script.onerror=()=>reject(Error('leaflet'));document.head.append(script);})
  ]).then(()=>window.L).catch(e=>{leaflet=null;throw e;});
  return leaflet;
@@ -36,7 +36,7 @@ function pinHtml(c,current,scale,compact){
 export function createCourseMap(container,{currentId=null,onPick=null,onScenic=null,modal=false}={}){
  const courses=CLIPS.filter(c=>c.map);
  container.classList.add('jeju-map');
- container.innerHTML='<div class="jeju-map-canvas" role="group" aria-label="제주 코스 지도"></div><p class="jeju-map-hint" hidden>두 손가락으로 지도를 움직여요</p><p class="jeju-map-tip">둥근 핀은 걷는 길, 네모 핀은 풍경이에요</p>';
+ container.innerHTML='<div class="jeju-map-canvas" role="group" aria-label="제주 코스 지도"></div><p class="jeju-map-hint" hidden>두 손가락으로 지도를 움직여요</p><p class="jeju-map-tip">▶ 붙은 동그란 사진은 풍경이에요</p>';
  const canvas=container.querySelector('.jeju-map-canvas');
  // highlight(id): lifts one pin above the others (home cards point at their place on the map).
  const handle={courses,map:null,refresh(){if(!handle.map)return;handle.map.invalidateSize();if(!fitted)fit();},
@@ -48,7 +48,7 @@ export function createCourseMap(container,{currentId=null,onPick=null,onScenic=n
  let open=null;
  canvas.addEventListener('click',e=>{
   const spot=e.target.closest('[data-scenic]');
-  if(spot){e.preventDefault();if(onScenic)onScenic(spot.dataset.scenic);else import('./scenic-player.js?v=scenic-22').then(m=>m.openScenic(spot.dataset.scenic));return;}
+  if(spot){e.preventDefault();if(onScenic)onScenic(spot.dataset.scenic);else import('./scenic-player.js?v=scenic-23').then(m=>m.openScenic(spot.dataset.scenic));return;}
   const dot=open&&e.target.closest('.cm-dot');if(dot){e.preventDefault();open(dot.dataset.clip);return;}
   const card=e.target.closest('[data-clip]');if(card){e.preventDefault();pick(card.dataset.clip);}
  });
@@ -112,7 +112,16 @@ export function createCourseMap(container,{currentId=null,onPick=null,onScenic=n
   const layoutCards=()=>{
    const W=canvas.clientWidth,H=canvas.clientHeight,PIN=compact?18:10,GAP=compact?2:6,S=compact?.62:1,CROSS=compact?60:2000;
    const pins=[...canvas.querySelectorAll('.cm-pin')].map(pin=>({pin,p:map.layerPointToContainerPoint(L.DomUtil.getPosition(pin.parentElement))}));
-   const spots=[...canvas.querySelectorAll('.cm-scenic-marker')].map(el=>map.layerPointToContainerPoint(L.DomUtil.getPosition(el)));
+   // Scenic pins a few km apart sit on top of each other at island zoom: nudge them apart
+   // (a few passes of pairwise pushes) so each stays a full-size target; cards then avoid them.
+   const spotEls=[...canvas.querySelectorAll('.cm-scenic-marker')];
+   const spots=spotEls.map(el=>{const p=map.layerPointToContainerPoint(L.DomUtil.getPosition(el));return{x:p.x,y:p.y,ox:p.x,oy:p.y};});
+   const MIN=compact?38:48;
+   for(let pass=0;pass<40;pass++)for(let i=0;i<spots.length;i++)for(let j=i+1;j<spots.length;j++){
+    const a=spots[i],b=spots[j];let dx=b.x-a.x,dy=b.y-a.y,d=Math.hypot(dx,dy);if(d>=MIN)continue;
+    if(d<.5){dx=1;dy=0;d=1;}const push=(MIN-d)/2;a.x-=dx/d*push;a.y-=dy/d*push;b.x+=dx/d*push;b.y+=dy/d*push;
+   }
+   spotEls.forEach((el,i)=>{const b=el.querySelector('.cm-scenic');b.style.translate=`${Math.round(spots[i].x-spots[i].ox)}px ${Math.round(spots[i].y-spots[i].oy)}px`;});
    // Phone maps lay out only the cards a tap opened; every pin stays uncovered.
    const items=pins.filter(({pin})=>!compact||pin.classList.contains('open')).map(a=>{
     const card=a.pin.querySelector('.cm-card');
@@ -140,7 +149,7 @@ export function createCourseMap(container,{currentId=null,onPick=null,onScenic=n
      let cost=Math.hypot(c.x-hx,c.y-hy)*.5;
      for(const b of others){cost+=overlap(c,b)*4;if(crosses(a.p,c,b)||crosses(b.p,b,c))cost+=CROSS;}
      for(const{p}of pins)cost+=overlap(c,{x:p.x,y:compact?p.y-21:p.y,w:PIN,h:compact?21:PIN})*20; // phone photo pins stand above their spot
-     for(const p of spots)cost+=overlap(c,{x:p.x,y:p.y,w:15,h:15})*20;
+     for(const p of spots)cost+=overlap(c,{x:p.x,y:p.y,w:compact?22:29,h:compact?22:29})*20; // round pin plus its glow
      for(const b of controls)cost+=overlap(c,b)*20;
      if(!best||cost<best.cost)best={...c,cost};
     };

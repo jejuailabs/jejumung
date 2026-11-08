@@ -42,6 +42,7 @@ export const CLIPS = [
 // looped), opened from a walk whose course names one in `scenic`, or from the map's scenic pins
 // (spots with `map`; pins sit on the clips' GPS, JUNGMUN and DARANGSHI on the place itself).
 const scenic=(id,title,place,line,map)=>({id,title,place,line,map,src:`/scenic/${id}/1/index.m3u8`,poster:`/lab/media/scenic/${id}.jpg`});
+const ytScenic=(id,youtube,title,place,line,map)=>({id,title,place,line,map,youtube,src:null,poster:`/lab/media/scenic/${id}.jpg`});
 export const SCENIC=[
  scenic('SAEBYEOL','은빛 억새 비탈','새별오름','바람이 불 때마다 억새가 은빛으로 일렁여요.',{lat:33.3643,lon:126.3597}),
  scenic('JOCHEON','닭머르 정자와 파도','조천 닭머르','파도가 부서지는 소리가 여기까지 들리는 것 같아요.',{lat:33.5503,lon:126.6410}),
@@ -53,5 +54,13 @@ export const SCENIC=[
  scenic('HALLIMSEA','작은 섬이 보이는 바다','한림 바다','물빛이 맑아요. 바다 건너 작은 섬이 보여요.',{lat:33.3850,lon:126.2200}),
  scenic('JEJUSEA','검은 바위 해안과 등대','제주시 바닷가','파도가 검은 바위에 부딪혀 하얗게 부서져요.',{lat:33.4980,lon:126.4400}),
  scenic('NOKKOMEVIEW','노꼬메 능선 아래 풀밭','노꼬메오름','안개가 걷히면서 풀밭이 드러나요.'),
- scenic('GEOMUNLAKE','구름 아래 연못','거문오름','구름이 천천히 지나가요.')
+ scenic('GEOMUNLAKE','구름 아래 연못','거문오름','구름이 천천히 지나가요.'),
+ // Longer views that live only on the funjeju YouTube channel (no HLS copy of ours).
+ ytScenic('HYEOPJAESUNSET','uQiu3v8PsDE','비양도 너머 지는 해','협재 바다','해가 비양도 뒤로 천천히 내려가요.',{lat:33.3940,lon:126.2390}),
+ ytScenic('UDOSKY','3mKPjkus68o','붉게 물드는 하늘','우도','하늘이 온통 주황빛으로 물들었어요.',{lat:33.5060,lon:126.9520}),
+ ytScenic('CHAGWIDO','L1HXY6x4c9I','차귀도 해넘이','차귀도','섬 옆으로 해가 노랗게 번져요.',{lat:33.3110,lon:126.1660}),
+ ytScenic('SUNSETS','nLAKo5TF9jc','네 곳의 해넘이','제주 곳곳','같은 저녁, 네 군데 하늘이 다 달라요.'),
+ ytScenic('BAENGNOKDAM','MaiVPLd0UnM','구름이 넘나드는 백록담','한라산 백록담','구름이 분화구를 넘어 흘러가요.',{lat:33.3617,lon:126.5292}),
+ ytScenic('EOSEUNGSAENG','pio7CGyaHzU','구름 바다 위 숲','어승생악','구름이 숲 위로 바다처럼 깔렸어요.',{lat:33.3936,lon:126.4916}),
+ ytScenic('JEJUQUIET','ce7mM02L1xs','잔잔한 제주 여기저기','제주 곳곳','특별한 건 없지만, 그래서 편안해요.')
 ];
